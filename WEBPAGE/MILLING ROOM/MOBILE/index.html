@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mill Operator Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 1rem;
+        background: #f5f5f5;
+      }
+      .card {
+        background: #fff;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        margin-bottom: 1.5rem;
+      }
+      .card h3 {
+        margin: 0 0 0.5rem;
+      }
+      .details {
+        font-size: 1rem;
+        line-height: 1.4;
+        margin-bottom: 0.8rem;
+      }
+      button {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-right: 0.5rem;
+      }
+      .start-btn {
+        background: #2b7bff;
+        color: white;
+      }
+      .milled-btn {
+        background: #00b894;
+        color: white;
+      }
+      .error-btn {
+        background: #ff7675;
+        color: white;
+      }
+      .error-dropdown {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        margin-top: 0.5rem;
+      }
+      .error-dropdown button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.8rem 1.2rem;
+        border: none;
+        background: white;
+        color: #333;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+      }
+      .error-dropdown button:last-child {
+        border-bottom: none;
+      }
+      .error-dropdown button:hover {
+        background: #f5f5f5;
+      }
+      .error-container {
+        position: relative;
+        display: inline-block;
+      }
+      .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        padding: 1rem 0;
+      }
+
+      .logo-container img {
+        height: 60px;
+        width: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+      .milling-plan-heading {
+        font-size: 6vw;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+        line-height: 1.2;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo-container">
+      <img src="logo/Mill Story logo.png" alt="Mill Story Logo" />
+      <h2 class="milling-plan-heading">Mill Operator Panel</h2>
+    </div>
+
+    <div id="output">Loading...</div>
+    <!-- Everything else remains unchanged -->
+    <script>
+      const supabase = window.supabase.createClient(
+        "https://sipnmwhfzdtqoqszgkmo.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M"
+      );
+
+      const machines = ["M1", "M2", "M3", "M4", "M5", "M6", "M7"];
+      const errorTypes = [
+        "No Grain",
+        "No Electricity",
+        "Machine is Hot",
+        "Belt Broken",
+        "Other Issue",
+      ];
+      const outputDiv = document.getElementById("output");
+
+      // ✅ NEW: returns ISO string in IST (UTC+5:30)
+      function getISTISOString() {
+        const now = new Date();
+        const offset = 330; // IST offset in minutes
+        const ist = new Date(now.getTime() + offset * 60000);
+        return ist.toISOString();
+      }
+
+      function formatTime(raw) {
+        if (!raw) return "--";
+        const [h, m] = raw.split(":");
+        const hour = parseInt(h);
+        const suffix = hour >= 12 ? "PM" : "AM";
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${m} ${suffix}`;
+      }
+
+      async function loadPanel() {
+        let html = "";
+
+        for (let machine of machines) {
+          let job = null;
+          let jobType = "";
+
+          const { data: millingJob } = await supabase
+            .from("millinglogs_copy")
+            .select("id, graintomill, coarseness, quantity, stoptime, status")
+            .eq("machine", machine)
+            .eq("status", "milling")
+            .order("starttime", { ascending: true })
+            .limit(1);
+
+          if (millingJob.length > 0) {
+            job = millingJob[0];
+            jobType = "milling";
+          } else {
+            const { data: queueJob } = await supabase
+              .from("millinglogs_copy")
+              .select(
+                "id, graintomill, coarseness, quantity, starttime, status"
+              )
+              .eq("machine", machine)
+              .eq("status", "in queue")
+              .order("starttime", { ascending: true })
+              .limit(1);
+            if (queueJob.length > 0) {
+              job = queueJob[0];
+              jobType = "in queue";
+            }
+          }
+
+          if (!job) {
+            html += `<div class="card"><h3>${machine}</h3><p class="details">No job available</p></div>`;
+            continue;
+          }
+
+          html += `<div class="card"><h3>${machine}</h3>
+        <div class="details">
+          Grain: <b>${job.graintomill}</b><br>
+          Coarseness: ${job.coarseness || "--"}<br>
+          Quantity: ${job.quantity || "--"}<br>`;
+
+          if (jobType === "in queue") {
+            html += `Start Time: ${formatTime(job.starttime)}<br>`;
+          } else {
+            html += `End Time: ${formatTime(job.stoptime)}<br>`;
+          }
+
+          html += `Status: <b>${job.status}</b>
+        </div>`;
+
+          if (jobType === "in queue") {
+            html += `
+              <button class="start-btn" onclick="startMilling(${
+                job.id
+              }, '${machine}')">Start</button>
+              <div class="error-container">
+                <button class="error-btn" onclick="toggleErrorDropdown(${
+                  job.id
+                }, '${machine}')">Issue</button>
+                <div id="error-dropdown-${job.id}" class="error-dropdown">
+                  ${errorTypes
+                    .map(
+                      (error) =>
+                        `<button onclick="markError(${job.id}, '${machine}', '${error}')">${error}</button>`
+                    )
+                    .join("")}
+                </div>
+              </div>`;
+          } else {
+            html += `
+              <button class="milled-btn" onclick="markMilled(${
+                job.id
+              }, '${machine}')">Finish</button>
+              <div class="error-container">
+                <button class="error-btn" onclick="toggleErrorDropdown(${
+                  job.id
+                }, '${machine}')">Issue</button>
+                <div id="error-dropdown-${job.id}" class="error-dropdown">
+                  ${errorTypes
+                    .map(
+                      (error) =>
+                        `<button onclick="markError(${job.id}, '${machine}', '${error}')">${error}</button>`
+                    )
+                    .join("")}
+                </div>
+              </div>
+            `;
+          }
+
+          html += `</div>`;
+        }
+
+        outputDiv.innerHTML = html;
+      }
+
+      async function startMilling(jobId, machine) {
+        const now = getISTISOString(); // ✅ use IST
+        await supabase
+          .from("millinglogs_copy")
+          .update({
+            status: "milling",
+            actual_starttime: now,
+          })
+          .eq("id", jobId);
+
+        loadPanel();
+      }
+
+      async function markMilled(jobId, machine) {
+        const now = getISTISOString(); // ✅ use IST
+        await supabase
+          .from("millinglogs_copy")
+          .update({
+            status: "milled",
+            actual_endtime: now,
+          })
+          .eq("id", jobId);
+
+        loadPanel();
+      }
+
+      function toggleErrorDropdown(jobId, machine) {
+        const dropdown = document.getElementById(`error-dropdown-${jobId}`);
+        const allDropdowns = document.querySelectorAll(".error-dropdown");
+
+        // Close all other dropdowns
+        allDropdowns.forEach((d) => {
+          if (d.id !== `error-dropdown-${jobId}`) {
+            d.style.display = "none";
+          }
+        });
+
+        // Toggle current dropdown
+        dropdown.style.display =
+          dropdown.style.display === "block" ? "none" : "block";
+      }
+
+      // Close dropdowns when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".error-container")) {
+          document.querySelectorAll(".error-dropdown").forEach((dropdown) => {
+            dropdown.style.display = "none";
+          });
+        }
+      });
+
+      async function markError(jobId, machine, errorType) {
+        await supabase
+          .from("millinglogs_copy")
+          .update({
+            status: "error",
+            error_code: errorType,
+          })
+          .eq("id", jobId);
+
+        loadPanel();
+      }
+
+      loadPanel();
+    </script>
+  </body>
+</html>

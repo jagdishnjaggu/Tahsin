@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Atta — Product Info</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    body { background: linear-gradient(180deg,#f8fafc,#ffffff); }
+    .card { backdrop-filter: blur(6px); }
+  </style>
+</head>
+<body class="min-h-screen p-6 font-sans text-gray-800">
+  <div class="max-w-4xl mx-auto">
+    <header class="mb-8">
+      <h1 class="text-3xl font-semibold">Atta — Product / Order Info</h1>
+      <p class="text-sm text-gray-500 mt-1">Demo page with fake data</p>
+    </header>
+
+    <!-- SUPPLY SECTION -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Supply</h2>
+      <div class="card p-4 rounded-2xl shadow-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-sm text-gray-500">Order ID</div>
+            <div class="text-xl font-mono mt-1">#1234</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-gray-500">Date</div>
+            <div class="text-lg font-medium" id="orderDate">23-11-2025</div>
+          </div>
+        </div>
+
+        <hr class="my-4" />
+
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <div class="font-medium">Item A (Atta A)</div>
+            <div class="text-gray-600">50 kg</div>
+          </div>
+          <div class="flex justify-between">
+            <div class="font-medium">Item B (Atta B)</div>
+            <div class="text-gray-600">30 kg</div>
+          </div>
+        </div>
+
+        <hr class="my-4" />
+
+        <div>
+          <div class="text-sm text-gray-500">Grain arrived</div>
+          <div class="mt-1">by <strong>Rahul Traders</strong></div>
+          <div class="text-sm text-gray-500 mt-1">on <strong>21-11-2025</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STORAGE SECTION -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Storage</h2>
+      <div class="card p-4 rounded-2xl shadow-md bg-white">
+        <h3 class="font-medium mb-2">Storage Condition (Snapshot)</h3>
+        <p class="text-sm text-gray-500 mb-4">Temperature & Humidity recorded over 3 days (inclusive).</p>
+
+        <canvas id="storageChart" width="400" height="250"></canvas>
+
+        <div class="mt-4 text-sm text-gray-600">
+          <div><strong>Range:</strong> 21-11-2025 to 23-11-2025</div>
+          <div class="mt-1"><strong>Notes:</strong> Values shown are simulated for demo purposes.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MILLING SECTION -->
+    <section class="mb-6">
+      <h2 class="text-2xl font-semibold mb-4">Milling</h2>
+      <div class="card p-4 rounded-2xl shadow-md bg-white">
+        <h3 class="font-medium mb-3">Milling Activity (Day)</h3>
+
+        <div class="mb-4 p-3 border rounded-lg">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <div class="text-sm text-gray-500">Item A (Atta A)</div>
+              <div class="font-medium">Milling: <span class="font-mono">12:30</span> — <span class="font-mono">14:00</span></div>
+            </div>
+            <div class="text-sm text-gray-600">Temp: <strong id="itemAtemp">--°C</strong> • RPM: <strong id="itemArpm">--</strong></div>
+          </div>
+        </div>
+
+        <div class="mb-4 p-3 border rounded-lg">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <div class="text-sm text-gray-500">Item B (Atta B)</div>
+              <div class="font-medium">Milling: <span class="font-mono">15:00</span> — <span class="font-mono">17:30</span></div>
+            </div>
+            <div class="text-sm text-gray-600">Temp: <strong id="itemBtemp">--°C</strong> • RPM: <strong id="itemBrpm">--</strong></div>
+          </div>
+        </div>
+
+        <div class="w-full h-6 bg-gray-100 rounded-full relative overflow-hidden mb-3">
+          <div class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-green-300 to-yellow-300" style="width:100%;"></div>
+          <div class="absolute left-0 top-0 bottom-0 flex items-center h-full pl-2 text-xs text-gray-700">12:30</div>
+          <div class="absolute right-2 top-0 bottom-0 flex items-center h-full text-xs text-gray-700">17:30</div>
+        </div>
+
+        <canvas id="millingDayChart" width="900" height="300"></canvas>
+      </div>
+    </section>
+
+    <!-- PACKING SECTION -->
+    <section class="mb-6">
+      <h2 class="text-2xl font-semibold mb-4">Packing</h2>
+      <div class="card p-4 rounded-2xl shadow-md bg-white">
+        <h3 class="font-medium mb-3">Packing Details</h3>
+
+        <div class="mb-4 p-3 border rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500">Item A (Atta A)</div>
+              <div class="font-medium mt-1">50 kg</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-500">Packed at</div>
+              <div class="font-medium mt-1">14:30</div>
+            </div>
+          </div>
+          <hr class="my-3" />
+          <div class="text-sm text-gray-600">
+            Packed by: <strong>Amit Kumar</strong>
+          </div>
+        </div>
+
+        <div class="mb-4 p-3 border rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500">Item B (Atta B)</div>
+              <div class="font-medium mt-1">30 kg</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-500">Packed at</div>
+              <div class="font-medium mt-1">18:00</div>
+            </div>
+          </div>
+          <hr class="my-3" />
+          <div class="text-sm text-gray-600">
+            Packed by: <strong>Priya Sharma</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+<footer class="text-xs text-gray-500 text-center mt-8">Demo — fake data only. Built for quick iteration.</footer>
+  </div>
+
+  <script>
+    // Storage chart data (fake)
+    const labels = ["21-11-2025","22-11-2025","23-11-2025"];
+    const tempValues = [28, 29, 27]; // °C
+    const humidityValues = [60, 58, 62]; // %
+
+    // Storage chart (safe guards)
+    const storageEl = document.getElementById('storageChart');
+    if (storageEl && storageEl.getContext) {
+      const ctx = storageEl.getContext('2d');
+      const storageChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Temperature (°C)',
+              data: tempValues,
+              tension: 0.3,
+              yAxisID: 'y',
+              pointRadius: 4,
+              fill: false,
+            },
+            {
+              label: 'Humidity (%)',
+              data: humidityValues,
+              tension: 0.3,
+              yAxisID: 'y1',
+              pointRadius: 4,
+              fill: false,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'index', intersect: false },
+          stacked: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: { display: true, text: '°C' },
+              min: 20,
+              max: 40
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: { display: true, text: '%' },
+              grid: { drawOnChartArea: false },
+              min: 30,
+              max: 100
+            }
+          }
+        }
+      });
+    }
+
+    // Guarded buttons (may not exist in the trimmed layout)
+    const dlBtn = document.getElementById('downloadCsv');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', () => {
+        const rows = [
+          ['date','temperature_c','humidity_pct'],
+          ...labels.map((d,i) => [d, tempValues[i], humidityValues[i]])
+        ];
+        // Fix: use proper newline escape sequence '\n' instead of an actual line break
+        const csv = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'storage_snapshot_1234.csv';
+        a.click(); URL.revokeObjectURL(url);
+      });
+    }
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) { printBtn.addEventListener('click', () => window.print()); }
+
+    // ------------------ Milling charts (fake/demo values) ------------------
+    // Single combined day timeline (12:00 - 18:00) with 30-min steps; overlay both items' temp & RPM.
+    const dayLabels = [
+      "12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00"
+    ];
+
+    const dayTempA = dayLabels.map(t => {
+      if (t === '12:30') return 42; if (t === '13:00') return 46; if (t === '13:30') return 45; if (t === '14:00') return 42;
+      return null;
+    });
+    const dayRpmA = dayLabels.map(t => {
+      if (t === '12:30') return 1400; if (t === '13:00') return 1500; if (t === '13:30') return 1480; if (t === '14:00') return 1450;
+      return null;
+    });
+
+    const dayTempB = dayLabels.map(t => {
+      if (t === '15:00') return 40; if (t === '15:30') return 43; if (t === '16:00') return 47; if (t === '16:30') return 46; if (t === '17:00') return 44; if (t === '17:30') return 42;
+      return null;
+    });
+    const dayRpmB = dayLabels.map(t => {
+      if (t === '15:00') return 1300; if (t === '15:30') return 1350; if (t === '16:00') return 1600; if (t === '16:30') return 1580; if (t === '17:00') return 1500; if (t === '17:30') return 1480;
+      return null;
+    });
+
+    const lastAtemp = dayTempA.filter(v => v !== null).slice(-1)[0];
+    const lastArpm = dayRpmA.filter(v => v !== null).slice(-1)[0];
+    const lastBtemp = dayTempB.filter(v => v !== null).slice(-1)[0];
+    const lastBrpm = dayRpmB.filter(v => v !== null).slice(-1)[0];
+    const elAtemp2 = document.getElementById('itemAtemp'); if (elAtemp2) elAtemp2.textContent = (lastAtemp||'--') + '°C';
+    const elArpm2 = document.getElementById('itemArpm'); if (elArpm2) elArpm2.textContent = (lastArpm||'--');
+    const elBtemp2 = document.getElementById('itemBtemp'); if (elBtemp2) elBtemp2.textContent = (lastBtemp||'--') + '°C';
+    const elBrpm2 = document.getElementById('itemBrpm'); if (elBrpm2) elBrpm2.textContent = (lastBrpm||'--');
+
+    const mEl = document.getElementById('millingDayChart');
+    if (mEl && mEl.getContext) {
+      const mCtx = mEl.getContext('2d');
+      const millingDayChart = new Chart(mCtx, {
+        type: 'line',
+        data: {
+          labels: dayLabels,
+          datasets: [
+            { label: 'Item A Temp (°C)', data: dayTempA, tension: 0.2, pointRadius: 4, spanGaps: false, yAxisID: 'y' },
+            { label: 'Item A RPM', data: dayRpmA, tension: 0.2, pointRadius: 3, spanGaps: false, yAxisID: 'y1' },
+            { label: 'Item B Temp (°C)', data: dayTempB, tension: 0.2, pointRadius: 4, spanGaps: false, yAxisID: 'y' },
+            { label: 'Item B RPM', data: dayRpmB, tension: 0.2, pointRadius: 3, spanGaps: false, yAxisID: 'y1' }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'nearest', intersect: true },
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: { type: 'linear', position: 'left', title: { display: true, text: '°C' }, min: 30, max: 80 },
+            y1: { type: 'linear', position: 'right', title: { display: true, text: 'RPM' }, grid: { drawOnChartArea: false }, min: 1000, max: 2000 }
+          }
+        }
+      });
+    }
+
+  </script>
+</body>
+</html>

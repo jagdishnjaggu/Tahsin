@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Live Mill Data Monitor</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 40px;
+      background: #f9f9f9;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .section-heading {
+      font-size: 24px;
+      margin: 30px 0 15px;
+      font-weight: bold;
+    }
+
+    .voltage-box, .storage-box {
+      background: #e0f7fa;
+      padding: 20px;
+      margin: 10px auto;
+      display: inline-block;
+      min-width: 300px;
+      font-size: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0, 128, 255, 0.1);
+    }
+
+    .reading-circle {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      margin: 10px;
+      border-radius: 50%;
+      text-align: center;
+      background: radial-gradient(circle, #f0f4f5, #dbe4e8);
+      box-shadow: inset -3px -3px 10px #ffffff, inset 3px 3px 10px #c3c3c3;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .circle-30inch {
+      width: 300px;
+      height: 300px;
+    }
+
+    .circle-24inch {
+      width: 240px;
+      height: 240px;
+    }
+
+    .circle-label {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #005b96;
+    }
+
+    .cold-label {
+      font-size: 14px;
+      color: #007BFF;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .video-container {
+      margin: 40px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      align-items: center;
+    }
+
+    video {
+      width: 720px;
+      height: 400px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>❄️ Cold Atta Mill - Live Monitor</h1>
+
+  <!-- Voltage -->
+  <div class="section-heading">3-Phase Voltage</div>
+  <div id="voltage" class="voltage-box">Loading voltage...</div>
+
+  <!-- Storage -->
+  <div class="section-heading">Storage Temp & Humidity</div>
+  <div id="storage" class="storage-box">Loading storage data...</div>
+
+  <!-- Machine 1 -->
+  <div class="section-heading">Machine 1</div>
+  <div class="reading-circle circle-30inch">
+    <div class="circle-label">Temp 1 & RPM 1</div>
+    <div id="m1t1">--</div>
+    <div id="m1r1">--</div>
+    <div class="cold-label">Cold Mill</div>
+  </div>
+  <div class="reading-circle circle-30inch">
+    <div class="circle-label">Temp 2 & RPM 2</div>
+    <div id="m1t2">--</div>
+    <div id="m1r2">--</div>
+    <div class="cold-label">Cold Mill</div>
+  </div>
+
+  <!-- Machine 2 -->
+  <div class="section-heading">Machine 2</div>
+  <div class="reading-circle circle-24inch">
+    <div class="circle-label">Temp 1 & RPM 1</div>
+    <div id="m2t1">--</div>
+    <div id="m2r1">--</div>
+    <div class="cold-label">Cold Mill</div>
+  </div>
+  <div class="reading-circle circle-24inch">
+    <div class="circle-label">Temp 2 & RPM 2</div>
+    <div id="m2t2">--</div>
+    <div id="m2r2">--</div>
+    <div class="cold-label">Cold Mill</div>
+  </div>
+
+  <!-- Camera Streams -->
+  <div class="video-container">
+    <div class="section-heading">📷 Live Camera 1</div>
+    <video id="cam1" controls autoplay muted></video>
+
+    <div class="section-heading">📷 Live Camera 2</div>
+    <video id="cam2" controls autoplay muted></video>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const voltageUrl = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/voltage.json";
+    const rpmTempUrl1 = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp.json";
+    const rpmTempUrl2 = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp_2.json";
+    const storageUrl   = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/dht_avg.json";
+
+    function updateVoltage() {
+      fetch(voltageUrl)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("voltage").innerHTML =
+            `R: ${data.R.toFixed(1)}V<br>Y: ${data.Y.toFixed(1)}V<br>B: ${data.B.toFixed(1)}V`;
+        })
+        .catch(() => {
+          document.getElementById("voltage").innerText = "⚠️ Unable to fetch voltage";
+        });
+    }
+
+    function updateMachineData(url, ids) {
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById(ids.temp1).innerText = `Temp: ${parseFloat(data.temp1 || 0).toFixed(1)} °C`;
+          document.getElementById(ids.rpm1).innerText = `RPM: ${parseFloat(data.rpm1 || 0).toFixed(0)}`;
+          document.getElementById(ids.temp2).innerText = `Temp: ${parseFloat(data.temp2 || 0).toFixed(1)} °C`;
+          document.getElementById(ids.rpm2).innerText = `RPM: ${parseFloat(data.rpm2 || 0).toFixed(0)}`;
+        })
+        .catch(() => {
+          document.getElementById(ids.temp1).innerText = "⚠️";
+          document.getElementById(ids.rpm1).innerText = "";
+          document.getElementById(ids.temp2).innerText = "⚠️";
+          document.getElementById(ids.rpm2).innerText = "";
+        });
+    }
+
+    function updateStorageData() {
+      fetch(storageUrl)
+        .then(res => res.json())
+        .then(data => {
+          const temperature = parseFloat(data.temperature || 0).toFixed(1);
+          const humidity = parseFloat(data.humidity || 0).toFixed(1);
+          document.getElementById("storage").innerHTML =
+            `Temperature: ${temperature} °C<br>Humidity: ${humidity}%`;
+        })
+        .catch(() => {
+          document.getElementById("storage").innerText = "⚠️ Unable to fetch storage data";
+        });
+    }
+
+    function updateAll() {
+      updateVoltage();
+      updateStorageData();
+      updateMachineData(rpmTempUrl1, {
+        temp1: "m1t1", rpm1: "m1r1",
+        temp2: "m1t2", rpm2: "m1r2"
+      });
+      updateMachineData(rpmTempUrl2, {
+        temp1: "m2t1", rpm1: "m2r1",
+        temp2: "m2t2", rpm2: "m2r2"
+      });
+    }
+
+    updateAll();
+    setInterval(updateAll, 5000);
+
+    // Camera setup
+    function setupPlayer(videoId, streamUrl) {
+      const video = document.getElementById(videoId);
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamUrl;
+      }
+    }
+
+   setupPlayer("cam1", "https://malawi-drum-adaptor-sitting.trycloudflare.com/streams/0.m3u8");
+setupPlayer("cam2", "https://malawi-drum-adaptor-sitting.trycloudflare.com/streams/1.m3u8");
+
+  </script>
+
+</body>
+</html>

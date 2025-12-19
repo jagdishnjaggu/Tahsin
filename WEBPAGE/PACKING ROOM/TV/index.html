@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mflow: Packing Dashboard</title>
+    <link rel="icon" type="image/png" href="logo/Mill Story logo.png" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f7f8fc;
+        font-family: "Inter", sans-serif;
+        font-size: 1vw;
+      }
+
+      header {
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 0.5rem;
+      }
+
+      .logo {
+        height: 60px;
+        width: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+
+      .dashboard-title {
+        font-size: 2vw;
+        font-weight: 600;
+        color: #1a1a1a;
+        text-align: center;
+        flex: 1;
+        margin-left: -40px; /* pulls title back to center due to clock width */
+      }
+
+      .time-box {
+        text-align: right;
+        font-size: 1vw;
+        color: #444;
+        min-width: 120px;
+      }
+
+      .time-box div {
+        margin: 0;
+      }
+
+      .summary-bar {
+        background: #ffffff;
+        padding: 0.8rem 2rem;
+        font-size: 1vw;
+        font-weight: 500;
+        color: #444;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .summary-bar span {
+        margin-right: 2.5rem;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(28%, 1fr));
+        gap: 1.2rem;
+        padding: 2rem;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        transition: background 0.2s, border 0.2s;
+      }
+      .card.issued {
+        background: #f8d7da;
+        border: 2px solid #dc3545;
+      }
+      .card.priority {
+        background: linear-gradient(90deg, #ffe082 0%, #fffde7 100%);
+        border: 2px solid #ffd600;
+        position: relative;
+      }
+      .priority-label {
+        display: inline-block;
+        background: #ffd600;
+        color: #7c6500;
+        font-weight: bold;
+        border-radius: 6px;
+        padding: 0.2em 0.7em;
+        font-size: 1vw;
+        margin-left: 1vw;
+        vertical-align: middle;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      }
+
+      .card h3 {
+        margin: 0 0 1rem;
+        font-size: 1.2vw;
+        color: #111;
+      }
+
+      .item-list {
+        margin-bottom: 0.5rem;
+      }
+
+      .item {
+        color: #333;
+        font-weight: 500;
+        margin-bottom: 0.3rem;
+      }
+
+      .item::before {
+        content: "🔹 ";
+        color: #ff9800;
+        font-size: 1vw;
+      }
+
+      .packed-card {
+        background: #e8f5e9;
+        border: 2px solid #66bb6a;
+      }
+
+      .packed-label {
+        margin-top: 1rem;
+        font-size: 0.95vw;
+        font-weight: bold;
+        color: #388e3c;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="logo/Mill Story logo.png" alt="Mill Story" class="logo" />
+      <div class="dashboard-title">Mflow: Packing Dashboard</div>
+      <div class="time-box">
+        <div id="current-date">Date</div>
+        <div id="current-time">Time</div>
+      </div>
+    </header>
+
+    <div class="summary-bar" id="summary">Loading summary...</div>
+    <div class="container" id="orders">Loading orders...</div>
+
+    <script>
+      const supabase = window.supabase.createClient(
+        "https://sipnmwhfzdtqoqszgkmo.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M"
+      );
+
+      let lastRendered = "";
+      let lastDataHTML = "";
+
+      function updateTime() {
+        const now = new Date();
+        document.getElementById("current-date").innerText =
+          now.toLocaleDateString();
+        document.getElementById("current-time").innerText =
+          now.toLocaleTimeString();
+      }
+      setInterval(updateTime, 1000);
+      updateTime();
+
+      async function fetchOrders({background = false} = {}) {
+        const container = document.getElementById("orders");
+        const summaryBar = document.getElementById("summary");
+
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date().toISOString().split("T")[0];
+
+        const { data: allOrders } = await supabase
+          .from("orders_overall_copy")
+          .select(
+            "shopify_name, customer_name, item_name, fineness, quantity, unit, weight, total, packing_status, packing_error_code, actual_packed_time, order_date, planned_delivery, route, delivery_status, delivery_issue"
+          )
+          .eq("planned_delivery", today) // Only fetch today's orders
+          .not("delivery_status", "eq", "delivered") // Exclude delivered orders
+          .not("delivery_status", "eq", "cancelled") // Exclude cancelled orders
+          .is("delivery_issue", null); // Exclude orders with delivery issues
+
+        // Group orders by shopify_name to get unique orders
+        const orderGroups = {};
+        allOrders.forEach((order) => {
+          if (!orderGroups[order.shopify_name]) {
+            orderGroups[order.shopify_name] = {
+              shopify_name: order.shopify_name,
+              customer_name: order.customer_name,
+              items: [],
+              packing_status: order.packing_status,
+              packing_error_code: order.packing_error_code,
+              actual_packed_time: order.actual_packed_time,
+              order_date: order.order_date,
+              planned_delivery: order.planned_delivery,
+              route: order.route,
+              delivery_status: order.delivery_status,
+              delivery_issue: order.delivery_issue,
+            };
+          }
+          orderGroups[order.shopify_name].items.push({
+            item_name: order.item_name,
+            fineness: order.fineness,
+            quantity: order.quantity,
+            unit: order.unit,
+            weight: order.weight,
+            total: order.total,
+          });
+        });
+
+        let uniqueOrders = Object.values(orderGroups);
+        // Sort by route in true numeric order (r1, r2, r3, ..., r10, ...)
+        uniqueOrders = uniqueOrders.sort((a, b) => {
+          const getRouteNum = r => r && /^r(\d+)$/i.test(r) ? parseInt(r.slice(1), 10) : Infinity;
+          return getRouteNum(a.route) - getRouteNum(b.route);
+        });
+
+        // Calculate and update summary bar
+        const totalCount = uniqueOrders.length;
+        const packedCount = uniqueOrders.filter(o => o.packing_status === "packed").length;
+        const issuedCount = uniqueOrders.filter(o => o.packing_status === "error" || o.packing_error_code).length;
+        const unpackedCount = uniqueOrders.filter(
+          o => !o.packing_status || o.packing_status === "pending" || o.packing_status === "unpacked"
+        ).length;
+        summaryBar.innerHTML = `
+          <span style="min-width: 10vw; display: inline-block; text-align: center;">Total: <b>${totalCount}</b></span>
+          <span style="min-width: 10vw; display: inline-block; text-align: center;">Packed: <b>${packedCount}</b></span>
+          <span style="min-width: 10vw; display: inline-block; text-align: center;">Unpacked: <b>${unpackedCount}</b></span>
+          <span style="min-width: 10vw; display: inline-block; text-align: center;">Issued: <b>${issuedCount}</b></span>
+        `;
+
+        // Only show orders for today where packing_status is not 'packed'
+        const actionableOrders = uniqueOrders.filter(
+          o => o.packing_status !== "packed"
+        );
+        // Show last 2 packed orders for today
+        const justPackedOrders = uniqueOrders
+          .filter(o => o.packing_status === "packed")
+          .sort((a, b) => new Date(b.actual_packed_time) - new Date(a.actual_packed_time))
+          .slice(0, 2);
+
+        // Separate by status for display
+        const priorityOrders = actionableOrders.filter(o => o.packing_status === "priority");
+        const issuedOrders = actionableOrders.filter(o => o.packing_status === "error" || o.packing_error_code);
+        const normalOrders = actionableOrders.filter(o => !o.packing_status && !(o.packing_error_code));
+
+        let html = "";
+
+        // Show last 2 packed orders at the top
+        if (justPackedOrders.length > 0) {
+          justPackedOrders.forEach(order => {
+            const isPriority = order.packing_status === "priority";
+            const packedTime = order.actual_packed_time ? new Date(order.actual_packed_time).toLocaleTimeString() : '';
+            html += `
+            <div class="card packed-card${isPriority ? ' priority' : ''}">
+              <h3>Order: ${order.shopify_name}</h3>
+              ${order.customer_name ? `<div style=\"color: #666; font-size: 0.9vw; margin-bottom: 0.5rem;\">Customer: ${order.customer_name}</div>` : ""}
+              <div class="item-list">
+                ${order.items.map(i => `
+                  <div class="item">${i.item_name}${i.fineness ? " – " + i.fineness : ""}${i.weight ? " – " + i.weight : ""}</div>
+                `).join("")}
+              </div>
+              <div class="packed-label">✅ Just Packed${packedTime ? ` at ${packedTime}` : ''}${isPriority ? '<span class=\'priority-label\'>PRIORITY</span>' : ''}</div>
+            </div>`;
+          });
+        }
+
+        // Show priority orders (golden)
+        priorityOrders.forEach(order => {
+          html += `
+        <div class="card priority">
+          <h3>Order: ${order.shopify_name}</h3>
+          ${order.customer_name ? `<div style="color: #666; font-size: 0.9vw; margin-bottom: 0.5rem;">Customer: ${order.customer_name}</div>` : ""}
+          <div class="item-list">
+            ${order.items.map(i => `
+              <div class="item">${i.item_name}${i.fineness ? " – " + i.fineness : ""}${i.weight ? " – " + i.weight : ""}</div>
+            `).join("")}
+          </div>
+          <div class="packed-label"><span class="priority-label">PRIORITY</span></div>
+        </div>`;
+        });
+
+        // Show issued orders (red)
+        issuedOrders.forEach(order => {
+          html += `
+        <div class="card issued">
+          <h3>Order: ${order.shopify_name}</h3>
+          ${order.customer_name ? `<div style="color: #666; font-size: 0.9vw; margin-bottom: 0.5rem;">Customer: ${order.customer_name}</div>` : ""}
+          <div class="item-list">
+            ${order.items.map(i => `
+              <div class="item">${i.item_name}${i.fineness ? " – " + i.fineness : ""}${i.weight ? " – " + i.weight : ""}</div>
+            `).join("")}
+          </div>
+        </div>`;
+        });
+
+        // Group normal orders by route and show them in order
+        const ordersByRoute = {};
+        normalOrders.forEach(order => {
+          const route = order.route || 'no-route';
+          if (!ordersByRoute[route]) {
+            ordersByRoute[route] = [];
+          }
+          ordersByRoute[route].push(order);
+        });
+
+        // Sort routes numerically (r1, r2, r3, etc.)
+        const sortedRoutes = Object.keys(ordersByRoute).sort((a, b) => {
+          const getRouteNum = r => r && /^r(\d+)$/i.test(r) ? parseInt(r.slice(1), 10) : Infinity;
+          return getRouteNum(a) - getRouteNum(b);
+        });
+
+        // Show orders by route
+        sortedRoutes.forEach(route => {
+          ordersByRoute[route].forEach(order => {
+            html += `
+          <div class="card">
+            <h3>Order: ${order.shopify_name}</h3>
+            ${order.customer_name ? `<div style="color: #666; font-size: 0.9vw; margin-bottom: 0.5rem;">Customer: ${order.customer_name}</div>` : ""}
+            <div class="item-list">
+              ${order.items.map(i => `
+                <div class="item">${i.item_name}${i.fineness ? " – " + i.fineness : ""}${i.weight ? " – " + i.weight : ""}</div>
+              `).join("")}
+            </div>
+          </div>`;
+          });
+        });
+
+        // Show all packed orders at the bottom (in descending order - most recent first)
+        const allPackedOrders = uniqueOrders.filter(o => o.packing_status === "packed")
+          .sort((a, b) => new Date(b.actual_packed_time) - new Date(a.actual_packed_time));
+        if (allPackedOrders.length > 0) {
+          allPackedOrders.forEach(order => {
+            const isPriority = order.packing_status === "priority";
+            const packedTime = order.actual_packed_time ? new Date(order.actual_packed_time).toLocaleTimeString() : '';
+            html += `
+          <div class="card packed-card${isPriority ? ' priority' : ''}">
+            <h3>Order: ${order.shopify_name}</h3>
+            ${order.customer_name ? `<div style="color: #666; font-size: 0.9vw; margin-bottom: 0.5rem;">Customer: ${order.customer_name}</div>` : ""}
+            <div class="item-list">
+              ${order.items.map(i => `
+                <div class="item">${i.item_name}${i.fineness ? " – " + i.fineness : ""}${i.weight ? " – " + i.weight : ""}</div>
+              `).join("")}
+            </div>
+            <div class="packed-label">✅ Packed${packedTime ? ` at ${packedTime}` : ''}${isPriority ? '<span class=\'priority-label\'>PRIORITY</span>' : ''}</div>
+          </div>`;
+          });
+        }
+
+        // Show message if no actionable orders for today
+        if (actionableOrders.length === 0 && justPackedOrders.length === 0) {
+          html = `
+            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+              <h3>No Orders for Today</h3>
+              <p style="color: #666; font-size: 1.2vw;">No actionable orders scheduled for delivery today (${today})</p>
+            </div>
+          `;
+        }
+
+        // Only update DOM if changed (prevents flicker)
+        if (background) {
+          if (html !== lastDataHTML) {
+            container.innerHTML = html;
+            lastDataHTML = html;
+          }
+        } else {
+          container.innerHTML = html;
+          lastDataHTML = html;
+        }
+      }
+
+      fetchOrders();
+      
+      // Soft refresh every 2 seconds (updates data without page reload)
+      setInterval(() => {
+        fetchOrders({background: true});
+      }, 2000);
+      
+      // Supabase Realtime subscription for today's orders (no polling)
+      let ordersSubscription = null;
+      async function subscribeRealtime() {
+        if (ordersSubscription) {
+          await supabase.removeChannel(ordersSubscription);
+        }
+        const today = new Date().toISOString().split("T")[0];
+        ordersSubscription = supabase
+          .channel('orders_overall_copy-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'orders_overall_copy',
+              filter: `planned_delivery=eq.${today}`
+            },
+            (payload) => {
+              fetchOrders();
+            }
+          )
+          .subscribe();
+      }
+      subscribeRealtime();
+    </script>
+  </body>
+</html>

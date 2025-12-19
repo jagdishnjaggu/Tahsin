@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Mobile MFlow Delivery Dashboard for delivery personnel" />
+    <meta name="author" content="Delivery Operations" />
+    <meta name="theme-color" content="#495057" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>MFlow: Delivery Dashboard</title>
+    <link rel="icon" href="logo/Mill Story logo.png" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f8f9fa;
+        color: #333;
+        line-height: 1.6;
+        overflow-x: hidden;
+        padding-bottom: 20px;
+      }
+
+      .container {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 10px;
+      }
+
+      .header {
+        background: white;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 16px;
+        border: 1px solid #e9ecef;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        transition: all 0.3s ease;
+      }
+
+
+
+      .header-title {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .header-title h1 {
+        text-align: center;
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.2;
+      }
+
+      .header-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .qr-button {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+        min-height: 36px;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .qr-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+      }
+
+      .qr-button:hover::before {
+        left: 100%;
+      }
+
+      .qr-button:active {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        transform: scale(0.95);
+        box-shadow: 0 1px 4px rgba(0, 123, 255, 0.4);
+      }
+
+      .qr-button:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
+      }
+
+      .help-button {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+        min-height: 36px;
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .help-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+      }
+
+      .help-button:hover::before {
+        left: 100%;
+      }
+
+      .help-button:active {
+        background: linear-gradient(135deg, #c82333, #a71e2a);
+        transform: scale(0.95);
+        box-shadow: 0 1px 4px rgba(220, 53, 69, 0.4);
+      }
+
+      .help-button:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
+      }
+
+      .logo {
+        max-height: 50px;
+        max-width: 50px;
+        object-fit: contain;
+        border-radius: 12px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      }
+
+      h1 {
+        color: #212529;
+        margin-bottom: 0;
+        margin-top: 0;
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+        line-height: 1.2;
+        display: flex;
+        align-items: center;
+      }
+
+      .route-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .route-selector label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 16px;
+      }
+
+      .route-selector select {
+        padding: 14px 16px;
+        border: 2px solid #ced4da;
+        border-radius: 12px;
+        font-size: 16px;
+        background: white;
+        color: #495057;
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+      }
+
+      .route-selector select:focus {
+        outline: none;
+        border-color: #495057;
+        box-shadow: 0 0 0 3px rgba(73, 80, 87, 0.1);
+      }
+
+      .profile-display {
+        margin-bottom: 12px;
+      }
+
+      .profile-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        min-height: 48px;
+      }
+
+      .profile-btn:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+      }
+
+      .profile-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+      }
+
+      .profile-icon {
+        font-size: 18px;
+        margin-right: 8px;
+      }
+
+      .profile-name {
+        flex: 1;
+        text-align: left;
+        font-weight: 600;
+      }
+
+      .profile-arrow {
+        font-size: 12px;
+        opacity: 0.8;
+        transition: transform 0.2s ease;
+      }
+
+      .profile-btn:hover .profile-arrow {
+        transform: translateY(1px);
+      }
+
+      .route-selector button {
+        padding: 14px 20px;
+        background: #495057;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        width: 100%;
+        min-height: 48px;
+      }
+
+      .route-selector button:active {
+        background: #343a40;
+        transform: scale(0.98);
+      }
+
+      .stats {
+        margin-bottom: 12px;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .stat-half {
+        flex: 1;
+        text-align: center;
+        padding: 4px 8px;
+      }
+
+      .stat-divider {
+        width: 1px;
+        height: 30px;
+        background-color: #e9ecef;
+        margin: 0 8px;
+      }
+
+      .stat-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .stat-label {
+        color: #6c757d;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        line-height: 1;
+        margin-bottom: 2px;
+      }
+
+      .stat-number {
+        font-size: 16px;
+        font-weight: 700;
+        color: #212529;
+        line-height: 1;
+      }
+
+      .stat-number {
+        font-size: 16px;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 2px;
+        line-height: 1;
+      }
+
+      .stat-label {
+        color: #6c757d;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        line-height: 1;
+      }
+
+      .orders-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+      }
+
+      .card:active {
+        transform: scale(0.98);
+      }
+
+      .card.delivered {
+        background: #e8f5e8;
+        border-color: #c3e6cb;
+      }
+
+      .card.delivered .customer-name {
+        color: #155724;
+      }
+
+      .card.delivered .total-amount {
+        background: #d4edda;
+        border-color: #c3e6cb;
+      }
+
+      .card.delivered .total-label,
+      .card.delivered .total-value {
+        color: #155724;
+      }
+
+      .customer-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 12px;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 8px;
+      }
+
+      .customer-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+        font-size: 15px;
+        color: #495057;
+      }
+
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+      }
+
+      .call-btn {
+        margin-left: auto;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+        min-height: 36px;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .call-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+      }
+
+      .call-btn:hover::before {
+        left: 100%;
+      }
+
+      .call-btn:active {
+        background: linear-gradient(135deg, #218838, #1ea085);
+        transform: scale(0.95);
+        box-shadow: 0 1px 4px rgba(40, 167, 69, 0.4);
+      }
+
+      .call-btn:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
+      }
+
+      .address-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+
+      .address-btn {
+        background: #007bff;
+        color: white;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 44px;
+        flex: 1;
+        justify-content: center;
+      }
+
+      .address-btn:active {
+        transform: scale(0.95);
+      }
+
+      .address-btn.copy {
+        background: #6c757d;
+      }
+
+      .order-details {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        border: 1px solid #e9ecef;
+      }
+
+      .order-item {
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .order-item:last-child {
+        border-bottom: none;
+      }
+
+      .item-name {
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 2px;
+        font-size: 15px;
+        text-align: left;
+      }
+
+      .item-specs {
+        font-size: 13px;
+        color: #6c757d;
+        text-align: left;
+      }
+
+      .payment-status {
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        padding: 4px 12px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .payment-status.received {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .payment-status.not-received {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .total-amount {
+        background: #e9ecef;
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 16px;
+        border: 1px solid #dee2e6;
+      }
+
+      .total-label {
+        font-size: 13px;
+        color: #6c757d;
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+
+      .total-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #212529;
+      }
+
+      .delivery-actions {
+        display: flex;
+        gap: 12px;
+      }
+
+      .delivery-actions button {
+        flex: 1;
+        padding: 16px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        min-height: 48px;
+      }
+
+      .delivery-actions button:active {
+        transform: scale(0.95);
+      }
+
+      .delivered {
+        background: #28a745;
+        color: white;
+      }
+
+      .issue {
+        background: #dc3545;
+        color: white;
+      }
+
+      .camera-btn {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+        font-size: 16px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        position: relative;
+        margin: 20px 0;
+      }
+
+
+
+      .no-orders {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+        font-size: 16px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        margin: 20px 0;
+      }
+
+      /* Mobile-optimized Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 20% auto;
+        padding: 24px;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 350px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        border: 1px solid #e9ecef;
+      }
+
+      .qr-modal-content {
+        max-width: 400px;
+      }
+
+      .qr-container {
+        margin: 20px 0;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+      }
+
+      .qr-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .modal h3 {
+        margin-bottom: 16px;
+        color: #212529;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .modal p {
+        color: #6c757d;
+        margin-bottom: 20px;
+        font-size: 15px;
+      }
+
+      .modal-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .modal-btn {
+        padding: 14px 20px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        min-height: 48px;
+        transition: all 0.2s ease;
+      }
+
+      .modal-btn:active {
+        transform: scale(0.95);
+      }
+
+      .btn-yes {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-no {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-cancel {
+        background: #dc3545;
+        color: white;
+      }
+
+      .help-contacts {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 20px 0;
+      }
+
+      .help-contact-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .help-contact-btn:active {
+        transform: scale(0.95);
+        background: linear-gradient(135deg, #218838, #1ea085);
+      }
+
+      /* Photo Modal Styles */
+      .photo-modal-content {
+        max-width: 450px;
+      }
+
+      .photo-capture-area {
+        margin: 20px 0;
+        border: 2px dashed #ced4da;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        background: #f8f9fa;
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .photo-preview {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .photo-preview img {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .photo-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        color: #6c757d;
+      }
+
+      .photo-icon {
+        font-size: 48px;
+        opacity: 0.6;
+      }
+
+      .photo-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        justify-content: center;
+      }
+
+      .photo-actions .modal-btn {
+        flex: 1;
+        max-width: 150px;
+      }
+
+      .upload-progress {
+        margin: 16px 0;
+        padding: 12px;
+        background: #e9ecef;
+        border-radius: 8px;
+        text-align: center;
+        display: none;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #dee2e6;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      /* Mobile-specific improvements */
+      @media (max-width: 480px) {
+        .container {
+          padding: 8px;
+        }
+        
+        .header {
+          padding: 12px;
+          margin-bottom: 12px;
+        }
+        
+        h1 {
+          font-size: 22px;
+          margin-bottom: 12px;
+        }
+        
+        .card {
+          padding: 16px;
+        }
+        
+        .customer-name {
+          font-size: 18px;
+        }
+        
+        .stats {
+          gap: 8px;
+        }
+        
+        .stat-card {
+          padding: 12px;
+        }
+      }
+
+      /* Prevent zoom on input focus */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+
+      /* Better touch targets */
+      button, .address-btn {
+        min-height: 44px;
+      }
+
+      /* Pull to refresh indicator */
+      .pull-indicator {
+        text-align: center;
+        padding: 10px;
+        color: #6c757d;
+        font-size: 14px;
+        display: none;
+      }
+
+      .total-amount.paid {
+        background: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .total-amount.pending {
+        background: #fff3cd;
+        border-color: #ffeaa7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+          <div class="header-title">
+            <img src="images/Mill Story logo.png" alt="Mill Story Logo" class="logo" />
+        <h1>MFlow: Delivery Dashboard</h1>
+            <div class="header-buttons">
+              <button class="qr-button" onclick="showPaymentQR()">
+                Payment QR
+              </button>
+              <button class="help-button" onclick="showHelpModal()">
+                Help
+              </button>
+            </div>
+          </div>
+
+        <div class="route-selector">
+          <div class="profile-display">
+            <button id="profileButton" onclick="showProfileModal()" class="profile-btn">
+              <span class="profile-icon">👤</span>
+              <span id="currentProfile" class="profile-name">Select Profile</span>
+              <span class="profile-arrow">▼</span>
+            </button>
+          </div>
+          <select id="deliveryBoySelect" onchange="loadOrdersForDeliveryBoy()" style="display: none;">
+            <option value="">Loading delivery persons...</option>
+          </select>
+        </div>
+
+        <div class="stats" id="stats" style="display: none">
+          <div class="stat-card">
+            <div class="stat-info">
+              <div class="stat-label">Pending Orders:</div>
+              <div class="stat-number" id="totalOrders">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="orders" class="loading">
+        Please select a delivery person to view orders...
+      </div>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div id="paymentModal" class="modal">
+      <div class="modal-content">
+        <h3>💳 Payment Status</h3>
+        <p>Was payment received?</p>
+        <div class="modal-buttons">
+          <button class="modal-btn btn-yes" onclick="confirmPayment(true)">
+            ✅ Yes
+          </button>
+          <button class="modal-btn btn-no" onclick="confirmPayment(false)">
+            ❌ No
+          </button>
+          <button class="modal-btn btn-cancel" onclick="closeModal()">
+            ✕ Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment QR Modal -->
+    <div id="qrModal" class="modal">
+      <div class="modal-content qr-modal-content">
+        <h3>💳 Payment QR Code</h3>
+        <p>Scan this QR code to make payment</p>
+        <div class="qr-container">
+          <img src="images/payment.png" alt="Payment QR Code" class="qr-image" />
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn btn-cancel" onclick="closeQRModal()">
+            ✕ Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Selection Modal -->
+    <div id="profileModal" class="modal">
+      <div class="modal-content">
+        <h3>👤 Select Profile</h3>
+        <p>Choose your delivery person profile to continue</p>
+        <div class="profile-selector">
+          <select id="profileSelect" style="width: 100%; padding: 12px; margin: 16px 0; border: 2px solid #ced4da; border-radius: 8px; font-size: 16px;">
+            <option value="">Loading delivery persons...</option>
+          </select>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn btn-yes" onclick="confirmProfile()">
+            ✅ Continue
+          </button>
+          <button class="modal-btn btn-cancel" onclick="closeProfileModal()">
+            ✕ Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photo Capture Modal -->
+    <div id="photoModal" class="modal">
+      <div class="modal-content photo-modal-content">
+        <h3>📸 Payment Photo</h3>
+        <p>Capture a photo of the payment for confirmation</p>
+        
+        <div class="photo-capture-area">
+          <div id="photoPreview" class="photo-preview" style="display: none;">
+            <img id="capturedPhoto" alt="Captured photo" />
+          </div>
+          <div id="photoPlaceholder" class="photo-placeholder">
+            <span class="photo-icon">📷</span>
+            <p>No photo captured yet</p>
+          </div>
+        </div>
+        
+        <div class="photo-actions">
+          <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;" />
+          <button class="modal-btn btn-yes" onclick="capturePhoto()">
+            📸 Capture Photo
+          </button>
+          <button id="skipPhotoBtn" class="modal-btn btn-no" onclick="skipPhotoUpload()" style="display: inline-block; margin-left: 8px;">
+            ⏭️ Skip Photo
+          </button>
+          <button id="retakeBtn" class="modal-btn btn-no" onclick="retakePhoto()" style="display: none;">
+            🔄 Retake
+          </button>
+        </div>
+        
+        <div class="modal-buttons">
+          <button id="uploadBtn" class="modal-btn btn-yes" onclick="uploadPaymentPhoto()" style="display: none;">
+            ✅ Confirm & Upload
+          </button>
+          <button class="modal-btn btn-cancel" onclick="closePhotoModal()">
+            ✕ Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+      <div class="modal-content">
+        <h3>🆘 Need Help?</h3>
+        <p>Contact support for assistance</p>
+        <div class="help-contacts">
+          <button class="help-contact-btn" onclick="callHelp('+919579203871')">
+            📞 +91 95792 03871
+          </button>
+          <button class="help-contact-btn" onclick="callHelp('+917204056645')">
+            📞 +91 72040 56645
+          </button>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn btn-cancel" onclick="closeHelpModal()">
+            ✕ Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyBxnAo0BptrKSPdzv0w7e9C55d7lFuwa2I",
+        authDomain: "mill-story-delivery.firebaseapp.com",
+        projectId: "mill-story-delivery",
+        storageBucket: "mill-story-delivery.firebasestorage.app",
+        messagingSenderId: "550034647386",
+        appId: "1:550034647386:web:b79fc425df25a4bab0eb63",
+        measurementId: "G-SC386Y3SVJ"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const storage = firebase.storage();
+
+      const supabase = window.supabase.createClient(
+        "https://sipnmwhfzdtqoqszgkmo.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M"
+      );
+
+      let currentOrders = [];
+      let availableDeliveryBoys = [];
+
+      // Load available delivery persons
+      async function loadDeliveryBoys() {
+        const { data, error } = await supabase
+          .from("orders_overall_copy")
+          .select("assigned_to")
+          .not("assigned_to", "is", null)
+          .neq("assigned_to", "")
+          .eq("delivery_status", "out_for_delivery")
+          .order("assigned_to");
+
+        if (error) {
+          console.error("Error loading delivery persons:", error);
+          return;
+        }
+
+        availableDeliveryBoys = [
+          ...new Set(
+            data.map((item) => item.assigned_to).filter((name) => name)
+          ),
+        ];
+
+        // Populate both selectors
+        populateSelectors();
+        
+        // Check if user has a saved profile
+        checkSavedProfile();
+      }
+
+      function populateSelectors() {
+        const deliveryBoySelect = document.getElementById("deliveryBoySelect");
+        const profileSelect = document.getElementById("profileSelect");
+
+        const options = '<option value="">Select a delivery person...</option>' + 
+          availableDeliveryBoys.map(name => `<option value="${name}">${name}</option>`).join('');
+
+        deliveryBoySelect.innerHTML = options;
+        profileSelect.innerHTML = options;
+      }
+
+      function checkSavedProfile() {
+        const savedProfile = sessionStorage.getItem('selectedDeliveryBoy');
+        if (savedProfile && availableDeliveryBoys.includes(savedProfile)) {
+          // Auto-select the saved profile
+          document.getElementById("deliveryBoySelect").value = savedProfile;
+          document.getElementById("currentProfile").textContent = savedProfile;
+          loadOrdersForDeliveryBoy();
+        } else {
+          // Show profile selection modal
+          showProfileModal();
+        }
+      }
+
+      // Load orders for selected delivery person
+      async function loadOrdersForDeliveryBoy() {
+        const selectedDeliveryBoy =
+          document.getElementById("deliveryBoySelect").value;
+
+        if (!selectedDeliveryBoy) {
+          document.getElementById("orders").innerHTML =
+            '<div class="no-orders">Please select a delivery person to view orders</div>';
+          document.getElementById("stats").style.display = "none";
+          return;
+        }
+
+        // No saving to localStorage - privacy for multiple delivery persons
+
+        document.getElementById("orders").innerHTML =
+          '<div class="loading">Loading orders...</div>';
+
+        const { data, error } = await supabase
+          .from("orders_overall_copy")
+          .select("*")
+          .eq("assigned_to", selectedDeliveryBoy)
+          .eq("delivery_status", "out_for_delivery")
+          .order("rider_sequence", { ascending: true, nullsFirst: true })
+          .order("shopify_name");
+
+        if (error) {
+          document.getElementById("orders").innerHTML =
+            '<div class="no-orders">Error loading data.</div>';
+          console.error(error);
+          return;
+        }
+
+        if (data.length === 0) {
+          document.getElementById("orders").innerHTML =
+            '<div class="no-orders">No pending orders for this delivery person</div>';
+          document.getElementById("stats").style.display = "none";
+          return;
+        }
+
+        currentOrders = data;
+        displayOrders(data);
+        updateStats(data);
+      }
+
+      // Calculate total weight from weight and quantity
+      function calculateTotalWeight(weight, quantity) {
+        if (!weight || !quantity) return 0;
+        
+        try {
+          // Extract numeric value from weight (e.g., "2kg" -> 2, "1.5kg" -> 1.5)
+          const weightValue = parseFloat(weight.toString().replace(/[^\d.]/g, ''));
+          const quantityValue = parseFloat(quantity);
+          
+          if (isNaN(weightValue) || isNaN(quantityValue)) return 0;
+          
+          const totalWeight = weightValue * quantityValue;
+          
+          // Extract unit from weight (e.g., "2kg" -> "kg", "1.5kg" -> "kg")
+          const unit = weight.toString().replace(/[\d.]/g, '');
+          
+          // If no unit found, return just the number
+          if (!unit) return totalWeight;
+          
+          return totalWeight + unit;
+        } catch (error) {
+          console.error('Error calculating total weight:', error);
+          return 0;
+        }
+      }
+
+      // Display orders in cards
+      function displayOrders(data) {
+        const grouped = {};
+        data.forEach((order) => {
+          if (!grouped[order.shopify_name]) grouped[order.shopify_name] = [];
+          grouped[order.shopify_name].push(order);
+        });
+
+        const container = document.getElementById("orders");
+        container.innerHTML = '<div class="orders-grid"></div>';
+        const grid = container.querySelector(".orders-grid");
+
+        Object.keys(grouped).forEach((shopify_name) => {
+          const orders = grouped[shopify_name];
+          const customer = orders[0];
+          const card = document.createElement("div");
+
+          const paymentStatus = orders[0]?.payment_status || "Pending";
+
+          card.className = `card`;
+          card.id = `card-${shopify_name.replace(/\s+/g, "-")}`;
+
+          const totalAmount = orders.reduce(
+            (sum, order) => sum + (order.total || 0),
+            0
+          );
+
+          card.innerHTML = `
+            <div class="customer-name">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <span style="font-size: 20px; font-weight: 700; color: #212529;">
+                  ${customer.customer_name || "N/A"}
+                </span>
+                <span style="font-size: 16px; font-weight: 400; color: #6c757d;">
+                  (${shopify_name})
+                </span>
+                ${customer.rider_sequence ? `
+                <span style="font-size: 14px; font-weight: 600; color: #007bff; background: #e3f2fd; padding: 4px 8px; border-radius: 12px; border: 1px solid #bbdefb;">
+                  #${customer.rider_sequence}
+                </span>
+                ` : `
+                <span style="font-size: 14px; font-weight: 600; color: #6c757d; background: #f8f9fa; padding: 4px 8px; border-radius: 12px; border: 1px solid #dee2e6;">
+                  No Seq
+                </span>
+                `}
+
+              </div>
+            </div>
+            <div class="customer-info">
+              <div class="info-item">
+                <span>📞</span>
+                <span>${customer.phone || "N/A"}</span>
+                ${customer.phone && customer.phone !== "N/A" ? `
+                <button 
+                  onclick="callCustomer('${customer.phone}')" 
+                  class="call-btn"
+                >
+                  📞 Call
+                </button>
+                ` : ''}
+              </div>
+              <div class="info-item">
+                <span>📍</span>
+                <span>${customer.address || "N/A"}</span>
+                <button 
+                  onclick="openGoogleMaps('${customer.address || "N/A"}')" 
+                  class="address-btn"
+                  style="margin-left: auto; padding: 6px 12px; font-size: 12px; min-height: 32px;"
+                >
+                  Maps
+                </button>
+              </div>
+              ${customer.city || customer.area ? `
+              <div class="info-item" style="margin-left: 16px; color: #6c757d; font-size: 13px;">
+                <span>🏙️</span>
+                <span>${customer.city || ""} ${customer.area ? `- ${customer.area}` : ""}</span>
+              </div>
+              ` : ""}
+            </div>
+
+            <div class="order-details">
+              ${orders
+                .map((order) => {
+                  return `
+                <div class="order-item">
+                  <div>
+                    <div class="item-name">${order.item_name || "N/A"}</div>
+                    <div class="item-specs">
+                      ${
+                        order.fineness && order.fineness !== "-"
+                          ? `Fineness: ${order.fineness}`
+                          : ""
+                      }
+                      ${order.fineness && order.fineness !== "-" ? " | " : ""}
+                      ${calculateTotalWeight(order.weight, order.quantity)}
+                    </div>
+                  </div>
+                </div>
+              `;
+                })
+                .join("")}
+            </div>
+
+                    <div class="total-amount ${paymentStatus === "Paid" ? "paid" : paymentStatus === "Pending" ? "pending" : "default"}">
+              <div class="total-label">Total Amount to Collect</div>
+              <div class="total-value">₹${totalAmount.toFixed(2)}</div>
+          <div class="payment-status ${
+            paymentStatus === "Paid" ? "paid" : "pending"
+          }" style="margin-top: 8px; display: inline-block;">
+            ${
+              paymentStatus === "Paid" ? "✓ Paid" : "⏳ Pending"
+            }
+          </div>
+            </div>
+
+            <div class="delivery-actions">
+              <button class="delivered" onclick="handleDelivery('${shopify_name}')" style="font-size: 12px; line-height: 1.2; padding: 8px 12px;">✅ Mark as<br>Delivered</button>
+              <button class="issue" onclick="reportIssue('${shopify_name}')">⚠️ Issue</button>
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+      }
+
+      // Update statistics
+      function updateStats(data) {
+        // Count unique customers instead of individual items
+        const uniqueCustomers = [
+          ...new Set(data.map((order) => order.shopify_name)),
+        ];
+        const totalOrders = uniqueCustomers.length;
+
+        document.getElementById("totalOrders").textContent = totalOrders;
+        document.getElementById("stats").style.display = "block";
+      }
+
+      // Payment modal functions
+      let currentShopifyName = "";
+
+      function handleDelivery(shopifyName) {
+        const orders = currentOrders.filter(
+          (order) => order.shopify_name === shopifyName
+        );
+        
+        // Check if any order already has payment received
+        const hasPaymentReceived = orders.some(order => order.payment_status === "Paid");
+        
+        if (hasPaymentReceived) {
+          // If payment already received, just mark as delivered
+          markAsDelivered(shopifyName, true);
+        } else {
+          // Show payment modal if no payment received yet
+          showPaymentModal(shopifyName);
+        }
+      }
+
+      function showPaymentModal(shopifyName) {
+        currentShopifyName = shopifyName;
+        document.getElementById("paymentModal").style.display = "block";
+      }
+
+      function closeModal() {
+        document.getElementById("paymentModal").style.display = "none";
+      }
+
+      // QR Modal functions
+      function showPaymentQR() {
+        document.getElementById("qrModal").style.display = "block";
+      }
+
+      function closeQRModal() {
+        document.getElementById("qrModal").style.display = "none";
+      }
+
+      // Profile Modal functions
+      function showProfileModal() {
+        document.getElementById("profileModal").style.display = "block";
+      }
+
+      function closeProfileModal() {
+        document.getElementById("profileModal").style.display = "none";
+      }
+
+      function confirmProfile() {
+        const selectedProfile = document.getElementById("profileSelect").value;
+        if (!selectedProfile) {
+          alert("Please select a delivery person profile");
+          return;
+        }
+
+        // Save to session storage
+        sessionStorage.setItem('selectedDeliveryBoy', selectedProfile);
+        
+        // Update UI
+        document.getElementById("deliveryBoySelect").value = selectedProfile;
+        document.getElementById("currentProfile").textContent = selectedProfile;
+        
+        // Close modal and load orders
+        closeProfileModal();
+        loadOrdersForDeliveryBoy();
+      }
+
+      // Help Modal functions
+      function showHelpModal() {
+        document.getElementById("helpModal").style.display = "block";
+      }
+
+      function closeHelpModal() {
+        document.getElementById("helpModal").style.display = "none";
+      }
+
+      // Photo capture variables
+      let currentPhotoFile = null;
+      let currentPhotoShopifyName = null;
+
+      // Photo Modal functions
+      function showPhotoModal(shopifyName) {
+        currentPhotoShopifyName = shopifyName;
+        currentPhotoFile = null;
+        // Reset modal state
+        document.getElementById("photoPreview").style.display = "none";
+        document.getElementById("photoPlaceholder").style.display = "flex";
+        document.getElementById("retakeBtn").style.display = "none";
+        document.getElementById("uploadBtn").style.display = "none";
+        document.getElementById("skipPhotoBtn").style.display = "inline-block";
+        document.getElementById("photoModal").style.display = "block";
+      }
+
+      function closePhotoModal() {
+        document.getElementById("photoModal").style.display = "none";
+        currentPhotoFile = null;
+        currentPhotoShopifyName = null;
+      }
+
+      function capturePhoto() {
+        document.getElementById("photoInput").click();
+      }
+
+      function retakePhoto() {
+        currentPhotoFile = null;
+        document.getElementById("photoPreview").style.display = "none";
+        document.getElementById("photoPlaceholder").style.display = "flex";
+        document.getElementById("retakeBtn").style.display = "none";
+        document.getElementById("uploadBtn").style.display = "none";
+        document.getElementById("skipPhotoBtn").style.display = "none";
+        document.getElementById("photoInput").value = "";
+      }
+
+      // Handle file selection
+      document.getElementById("photoInput").addEventListener("change", function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          // Check file size first (max 5MB before compression)
+          if (file.size > 5 * 1024 * 1024) {
+            alert("File too large. Please select a smaller image (max 5MB).");
+            return;
+          }
+          
+          currentPhotoFile = file;
+          
+          // Compress and resize image to 720p max
+          compressImage(file, 1280, 720, 0.7).then(compressedFile => {
+            // Check final file size (max 1MB after compression)
+            if (compressedFile.size > 1024 * 1024) {
+              alert("Image still too large after compression. Please try a smaller image.");
+              return;
+            }
+            
+            currentPhotoFile = compressedFile;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              document.getElementById("capturedPhoto").src = e.target.result;
+              document.getElementById("photoPreview").style.display = "flex";
+              document.getElementById("photoPlaceholder").style.display = "none";
+              document.getElementById("retakeBtn").style.display = "inline-block";
+              document.getElementById("uploadBtn").style.display = "inline-block";
+              document.getElementById("skipPhotoBtn").style.display = "inline-block";
+            };
+            reader.readAsDataURL(compressedFile);
+          });
+        }
+      });
+
+      // Image compression function with quality control
+      function compressImage(file, maxWidth, maxHeight, quality = 0.7) {
+        return new Promise((resolve) => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const img = new Image();
+          
+          img.onload = function() {
+            // Calculate new dimensions (max 720p)
+            let { width, height } = img;
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw and compress with quality control
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob(resolve, "image/jpeg", quality);
+          };
+          
+          img.src = URL.createObjectURL(file);
+        });
+      }
+
+      async function skipPhotoUpload() {
+        // Mark as delivered without photo
+        await markAsDelivered(currentPhotoShopifyName, true);
+        closePhotoModal();
+      }
+
+      async function uploadPaymentPhoto() {
+        if (!currentPhotoFile || !currentPhotoShopifyName) {
+          alert("No photo to upload");
+          return;
+        }
+
+        const selectedProfile = sessionStorage.getItem('selectedDeliveryBoy');
+        if (!selectedProfile) {
+          alert("Please select your profile first");
+          return;
+        }
+
+        try {
+          // Create file path using shopify name
+          const fileName = `${currentPhotoShopifyName}.png`;
+          const filePath = `delivery-payments/${fileName}`;
+          
+          // Upload to Firebase Storage
+          const storageRef = storage.ref();
+          const fileRef = storageRef.child(filePath);
+          
+          const uploadTask = fileRef.put(currentPhotoFile);
+
+          // Show progress
+          uploadTask.on('state_changed', 
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log('Upload progress: ' + progress + '%');
+            },
+            (error) => {
+              console.error('Upload error:', error);
+              alert('Upload failed: ' + error.message);
+            },
+            async () => {
+              // Upload completed
+              const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+              
+              // Update database with photo URL
+              const orders = currentOrders.filter(order => order.shopify_name === currentPhotoShopifyName);
+              
+        for (let order of orders) {
+          await supabase
+            .from("orders_overall_copy")
+            .update({
+                    payment_photo_url: downloadURL,
+                    payment_photo_timestamp: new Date().toISOString()
+                  })
+                  .eq("order_id", order.order_id);
+              }
+              
+              // Mark as delivered with payment received
+              await markAsDelivered(currentPhotoShopifyName, true);
+              
+              alert("Payment photo uploaded and order marked as delivered!");
+              closePhotoModal();
+            }
+          );
+          
+        } catch (error) {
+          console.error('Error uploading photo:', error);
+          alert('Upload failed: ' + error.message);
+        }
+      }
+
+      function callHelp(phoneNumber) {
+        const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+        const telUrl = `tel:${cleanNumber}`;
+        window.location.href = telUrl;
+      }
+
+      async function markAsDelivered(shopifyName, paymentReceived) {
+        console.log(`Marking ${shopifyName} as delivered, payment received: ${paymentReceived}`);
+        
+        const orders = currentOrders.filter(
+          (order) => order.shopify_name === shopifyName
+        );
+
+        console.log(`Found ${orders.length} orders to update`);
+
+        try {
+          // Update database
+          for (let order of orders) {
+            const updateData = {
+              delivery_status: "delivered",
+              actual_delivery_time: new Date().toISOString(),
+              payment_status: paymentReceived ? "Paid" : "Pending",
+            };
+            
+            console.log(`Updating order ${order.order_id} with:`, updateData);
+            
+            const { data, error } = await supabase
+              .from("orders_overall_copy")
+              .update(updateData)
+            .eq("order_id", order.order_id);
+              
+            if (error) {
+              console.error(`Error updating order ${order.order_id}:`, error);
+              throw error;
+        }
+
+            console.log(`Successfully updated order ${order.order_id}`);
+          }
+
+        alert("Order marked as delivered successfully.");
+
+        // Remove delivered orders from current orders array
+        currentOrders = currentOrders.filter((order) => order.shopify_name !== shopifyName);
+
+          console.log(`Removed delivered orders from local array, remaining orders: ${currentOrders.length}`);
+
+        // Refresh the display to show updated cards and stats
+        displayOrders(currentOrders);
+        updateStats(currentOrders);
+          
+          console.log(`Successfully marked ${shopifyName} as delivered`);
+        } catch (error) {
+          console.error(`Failed to mark ${shopifyName} as delivered:`, error);
+          alert(`Failed to mark order as delivered: ${error.message}`);
+        }
+      }
+
+      async function confirmPayment(paymentReceived) {
+        if (paymentReceived) {
+          // If payment received, show photo capture
+          closeModal();
+          showPhotoModal(currentShopifyName);
+        } else {
+          // If no payment, just mark as delivered
+          await markAsDelivered(currentShopifyName, paymentReceived);
+          closeModal();
+        }
+      }
+
+      // Issue reporting
+      function reportIssue(shopifyName) {
+        // Create modal for issue reporting
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.id = 'issueModal';
+        modal.style.display = 'block';
+        
+        modal.innerHTML = `
+          <div class="modal-content">
+            <h3>Report Delivery Issue</h3>
+            <p>Please describe the issue you encountered during delivery:</p>
+            <textarea id="issueMessage" placeholder="Enter issue details here..." 
+                      style="width: 100%; height: 120px; padding: 12px; border: 2px solid #ced4da; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical; margin: 16px 0;"></textarea>
+            <div class="modal-buttons">
+              <button class="modal-btn btn-yes" onclick="submitIssue('${shopifyName}')">Submit Issue</button>
+              <button class="modal-btn btn-cancel" onclick="closeIssueModal()">Cancel</button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Focus on textarea
+        setTimeout(() => {
+          document.getElementById('issueMessage').focus();
+        }, 100);
+      }
+
+      function submitIssue(shopifyName) {
+        const issueMessage = document.getElementById('issueMessage').value.trim();
+        
+        if (!issueMessage) {
+          alert('Please enter issue details before submitting.');
+          return;
+        }
+
+        const orders = currentOrders.filter(
+          (order) => order.shopify_name === shopifyName
+        );
+
+        // Update all orders with the same shopify_name
+        Promise.all(orders.map(order => 
+          supabase
+            .from("orders_overall_copy")
+            .update({
+              delivery_status: "issue",
+              delivery_issue: issueMessage,
+              actual_delivery_time: new Date().toISOString()
+            })
+            .eq("order_id", order.order_id)
+        )).then(() => {
+          alert("Issue reported successfully.");
+          closeIssueModal();
+          loadOrdersForDeliveryBoy();
+        }).catch(error => {
+          console.error('Error reporting issue:', error);
+          alert("Failed to report issue. Please try again.");
+        });
+      }
+
+      function closeIssueModal() {
+        const modal = document.getElementById('issueModal');
+        if (modal) {
+          modal.remove();
+        }
+      }
+
+      // Close modal when clicking outside
+      window.onclick = function (event) {
+        const paymentModal = document.getElementById("paymentModal");
+        const qrModal = document.getElementById("qrModal");
+        const helpModal = document.getElementById("helpModal");
+        const profileModal = document.getElementById("profileModal");
+        const photoModal = document.getElementById("photoModal");
+        const issueModal = document.getElementById("issueModal");
+        
+        if (event.target === paymentModal) {
+          closeModal();
+        }
+        if (event.target === qrModal) {
+          closeQRModal();
+        }
+        if (event.target === helpModal) {
+          closeHelpModal();
+        }
+        if (event.target === profileModal) {
+          closeProfileModal();
+        }
+        if (event.target === photoModal) {
+          closePhotoModal();
+        }
+        if (event.target === issueModal) {
+          closeIssueModal();
+        }
+      };
+
+      // Initialize
+      loadDeliveryBoys();
+
+      // Add error handling for network issues
+      window.addEventListener("online", function () {
+        console.log("Connection restored");
+      });
+
+      window.addEventListener("offline", function () {
+        alert(
+          "No internet connection. Please check your connection and try again."
+        );
+      });
+
+      // Enhanced Google Maps integration for mobile
+      function openGoogleMaps(address) {
+        if (!address || address === "N/A") {
+          alert("No address available for this location.");
+          return;
+        }
+        
+        // Find the customer from current orders
+        const customer = currentOrders.find(order => order.shopify_name === currentShopifyName);
+        let searchQuery = address;
+        
+        if (customer) {
+          const addressParts = [address];
+          if (customer.city) addressParts.push(customer.city);
+          if (customer.area) addressParts.push(customer.area);
+          searchQuery = addressParts.join(", ");
+        }
+
+        // Check if user is on mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+          // Try to open Google Maps app
+          const mapsAppUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}`;
+          window.location.href = mapsAppUrl;
+        } else {
+          // Fallback to web version
+          const googleMapsUrl = `https://maps.google.com/?q=${encodeURIComponent(searchQuery)}`;
+          window.open(googleMapsUrl, '_blank');
+        }
+      }
+
+      // Function to copy address to clipboard
+      function copyAddress(address) {
+        if (!address || address === "N/A") {
+          alert("No address available to copy.");
+          return;
+        }
+
+        // Find the customer to get full address
+        const customer = currentOrders.find(order => order.shopify_name === currentShopifyName);
+        let fullAddress = address;
+        
+        if (customer) {
+          const addressParts = [address];
+          if (customer.city) addressParts.push(customer.city);
+          if (customer.area) addressParts.push(customer.area);
+          fullAddress = addressParts.join(", ");
+        }
+
+        navigator.clipboard.writeText(fullAddress).then(function() {
+          // Show a temporary success message
+          const originalText = event.target.textContent;
+          event.target.textContent = "✓ Copied!";
+          event.target.style.background = "#28a745";
+          
+          setTimeout(() => {
+            event.target.textContent = originalText;
+            event.target.style.background = "#6c757d";
+          }, 2000);
+        }).catch(function(err) {
+          console.error('Could not copy text: ', err);
+          alert("Could not copy address to clipboard.");
+        });
+      }
+
+      // Function to call customer
+      function callCustomer(phoneNumber) {
+        if (!phoneNumber || phoneNumber === "N/A") {
+          alert("No phone number available to call.");
+          return;
+        }
+
+        // Clean the phone number (remove spaces, dashes, etc.)
+        const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+        
+        // Check if it's a valid Indian mobile number
+        if (cleanNumber.length >= 10) {
+          // For mobile devices, this will open the phone dialer
+          const telUrl = `tel:${cleanNumber}`;
+          window.location.href = telUrl;
+        } else {
+          alert("Invalid phone number format.");
+        }
+      }
+
+
+
+      // Add pull-to-refresh functionality
+      let startY = 0;
+      let currentY = 0;
+      let pullDistance = 0;
+      const pullThreshold = 80;
+
+      document.addEventListener('touchstart', function(e) {
+        startY = e.touches[0].clientY;
+      });
+
+      document.addEventListener('touchmove', function(e) {
+        currentY = e.touches[0].clientY;
+        pullDistance = currentY - startY;
+        
+        if (pullDistance > 0 && window.scrollY === 0) {
+          e.preventDefault();
+        }
+      });
+
+      document.addEventListener('touchend', function(e) {
+        if (pullDistance > pullThreshold && window.scrollY === 0) {
+          // Trigger refresh
+          loadOrdersForDeliveryBoy();
+        }
+        pullDistance = 0;
+      });
+    </script>
+  </body>
+</html>

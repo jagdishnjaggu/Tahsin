@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mill Story - Today's Deliveries</title>
+    <link rel="icon" type="image/png" href="logo/Mill Story logo.png">
+    <link rel="apple-touch-icon" href="logo/Mill Story logo.png">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+        .appbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: #fff;
+            color: #1e293b;
+            padding: 10px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .appbar-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .appbar-date {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .appbar img {
+            height: 40px;
+            width: 40px;
+            border-radius: 8px;
+            background: #fff;
+            object-fit: contain;
+        }
+        .appbar-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #1e293b;
+        }
+        .route-selector {
+            padding: 12px 10px 0 10px;
+            background: #f8fafc;
+        }
+        .route-dropdown {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            background: #fff;
+            color: #1e293b;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .route-dropdown:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .route-dropdown option {
+            padding: 8px;
+            font-size: 1rem;
+        }
+        .orders-list {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .order-card {
+            background: #f8fafc;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border-left: 3px solid #3b82f6;
+            padding: 12px 12px 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .shopify-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .status-chip {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-chip.packed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .item-info {
+            font-size: 1rem;
+            color: #1e293b;
+            font-weight: 500;
+        }
+        .qty-info {
+            font-size: 0.97rem;
+            color: #64748b;
+        }
+        .items-list {
+            margin: 8px 0;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .item-row:last-child {
+            border-bottom: none;
+        }
+        .total-info {
+            font-size: 1rem;
+            color: #1e293b;
+            font-weight: 600;
+            text-align: right;
+            margin: 8px 0;
+            padding-top: 8px;
+            border-top: 2px solid #e2e8f0;
+        }
+        .loaded-btn {
+            margin-top: 6px;
+            padding: 8px 0;
+            width: 100%;
+            background: #b91c1c;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .loaded-btn:disabled {
+            background: #e5e7eb;
+            color: #b91c1c;
+            cursor: not-allowed;
+        }
+        .no-orders {
+            text-align: center;
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="appbar">
+        <img src="logo/Mill Story logo.png" alt="Mill Story Logo" />
+        <div class="appbar-content">
+            <span class="appbar-title">Mill Story Dispatching</span>
+            <span class="appbar-date" id="todayDate"></span>
+        </div>
+    </div>
+    <div class="route-selector">
+        <select class="route-dropdown" id="routeSelector">
+            <option value="">Select a route</option>
+        </select>
+    </div>
+    <div class="orders-list" id="ordersList">
+        <div class="no-orders">Select a route to view orders</div>
+    </div>
+    <div id="debugArea" style="font-size:0.9rem;color:#b91c1c;padding:8px 10px;"></div>
+    <script>
+        // Supabase config
+        const supabaseUrl = 'https://sipnmwhfzdtqoqszgkmo.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let orders = [];
+        let routes = [];
+        let selectedRoute = null;
+
+        // Helper function to generate consistent order keys
+        function generateOrderKey(order) {
+            const shopifyName = (order.shopify_name || '').toString();
+            const itemName = (order.item_name || '').toString();
+            const fineness = (order.fineness || '').toString();
+            const quantity = (order.quantity || 0).toString();
+            const weight = (order.weight || 0).toString();
+            
+            return `${shopifyName}_${itemName}_${fineness}_${quantity}_${weight}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        async function loadOrders() {
+            console.log('Loading orders...');
+            
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date().toISOString().split('T')[0];
+            console.log('Today\'s date:', today);
+            
+            const { data, error } = await supabase
+                .from('orders_overall_copy')
+                .select('*')
+                .eq('planned_delivery', today)
+                .order('route', { ascending: true });
+            if (error) {
+                console.error('Error loading orders:', error);
+                document.getElementById('ordersList').innerHTML = `<div class='no-orders'>Error loading orders: ${error.message}</div>`;
+                return;
+            }
+            orders = data || [];
+            console.log('Loaded orders for today:', orders.length);
+            
+            // Group orders by route (like TV dashboard)
+            const routesObj = {};
+            orders.forEach(order => {
+                const routeName = order.route;
+                if (routeName && routeName.trim() !== '') {
+                    if (!routesObj[routeName]) routesObj[routeName] = [];
+                    routesObj[routeName].push(order);
+                }
+            });
+            routes = Object.keys(routesObj).sort();
+            console.log('Available routes for today:', routes);
+            window._routesObj = routesObj; // for debug
+            renderRouteSelector();
+            renderOrders();
+        }
+
+        function renderRouteSelector() {
+            // Check if current selected route should be cleared
+            checkAndClearSelectedRoute();
+            
+            const select = document.getElementById('routeSelector');
+            if (!routes.length) {
+                select.innerHTML = '<option value="">No routes found</option>';
+                return;
+            }
+            
+            // Filter routes to only show those with unloaded orders
+            const routesWithUnloadedOrders = routes.filter(route => {
+                const routeOrders = window._routesObj[route] || [];
+                const unloadedCount = routeOrders.filter(order => (order.loading_status || '').toLowerCase() !== 'loaded').length;
+                return unloadedCount > 0;
+            });
+            
+            if (!routesWithUnloadedOrders.length) {
+                select.innerHTML = '<option value="">All routes completed</option>';
+                return;
+            }
+            
+            // Keep the default option and add route options
+            select.innerHTML = '<option value="">Select a route</option>' + 
+                routesWithUnloadedOrders.map(route => `<option value="${route}" ${route === selectedRoute ? 'selected' : ''}>${route}</option>`).join('');
+        }
+
+        // Add event listener for dropdown change
+        document.addEventListener('DOMContentLoaded', function() {
+            const routeSelect = document.getElementById('routeSelector');
+            routeSelect.addEventListener('change', function() {
+                selectedRoute = this.value;
+                renderOrders();
+            });
+        });
+        
+        // Function to check if current selected route should be cleared
+        function checkAndClearSelectedRoute() {
+            if (selectedRoute) {
+                const routeOrders = window._routesObj[selectedRoute] || [];
+                const unloadedCount = routeOrders.filter(order => (order.loading_status || '').toLowerCase() !== 'loaded').length;
+                if (unloadedCount === 0) {
+                    selectedRoute = null;
+                }
+            }
+        }
+
+        function renderOrders() {
+            const container = document.getElementById('ordersList');
+            if (!selectedRoute) {
+                container.innerHTML = `<div class='no-orders'>Select a route to view orders</div>`;
+                return;
+            }
+            const filtered = (window._routesObj && window._routesObj[selectedRoute]) || [];
+            // Filter out loaded orders
+            const unloadedOrders = filtered.filter(order => (order.loading_status || '').toLowerCase() !== 'loaded');
+            if (!unloadedOrders.length) {
+                container.innerHTML = `<div class='no-orders'>All orders for this route have been loaded</div>`;
+                return;
+            }
+            
+            // Group orders by shopify_name
+            const groupedOrders = {};
+            unloadedOrders.forEach(order => {
+                const shopifyName = order.shopify_name || 'Unknown';
+                if (!groupedOrders[shopifyName]) {
+                    groupedOrders[shopifyName] = [];
+                }
+                groupedOrders[shopifyName].push(order);
+            });
+            
+            // Render grouped order cards
+            container.innerHTML = Object.keys(groupedOrders).map(shopifyName => 
+                renderGroupedOrderCard(shopifyName, groupedOrders[shopifyName])
+            ).join('');
+        }
+
+        function renderGroupedOrderCard(shopifyName, orders) {
+            // Calculate overall packing status
+            const allPacked = orders.every(order => (order.packing_status || '').toLowerCase() === 'packed');
+            const packingStatus = allPacked ? 'packed' : 'unpacked';
+            
+            // Calculate total weight
+            let totalWeight = 0;
+            let totalWeightStr = '';
+            
+            orders.forEach(order => {
+                const quantity = Number(order.quantity) || 0;
+                const weight = parseFloat(order.weight) || 0;
+                const unit = order.unit || '';
+                totalWeight += weight * quantity;
+            });
+            
+            // Format total weight
+            if (totalWeight > 0) {
+                if (totalWeight >= 1000) {
+                    totalWeightStr = `${(totalWeight / 1000).toFixed(1)} kg`;
+                } else {
+                    totalWeightStr = `${totalWeight} g`;
+                }
+            }
+            
+            // Check if all items are loaded
+            const allLoaded = orders.every(order => (order.loading_status || '').toLowerCase() === 'loaded');
+            
+            // Generate keys for all orders
+            const orderKeys = orders.map(order => generateOrderKey(order));
+            
+            return `
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="shopify-name">${shopifyName}</div>
+                        <div class="status-chip packing-status${packingStatus === 'packed' ? ' packed' : ''}">
+                            <span class="material-icons" style="font-size: 16px;">
+                                ${packingStatus === 'packed' ? 'check_circle' : 'pending'}
+                            </span>
+                            ${packingStatus}
+                        </div>
+                    </div>
+                    <div class="items-list">
+                        ${orders.map(order => {
+                            const itemName = order.item_name || '';
+                            const fineness = order.fineness || '';
+                            const quantity = Number(order.quantity) || 0;
+                            const weight = parseFloat(order.weight) || 0;
+                            const unit = order.unit || '';
+                            const itemTotalWeight = weight * quantity;
+                            let itemWeightStr = '';
+                            
+                            if (unit.toLowerCase().includes('kg')) {
+                                itemWeightStr = `${itemTotalWeight} kg`;
+                            } else if (unit.toLowerCase().includes('g')) {
+                                if (itemTotalWeight >= 1000) {
+                                    itemWeightStr = `${(itemTotalWeight / 1000).toFixed(1)} kg`;
+                                } else {
+                                    itemWeightStr = `${itemTotalWeight} g`;
+                                }
+                            } else {
+                                itemWeightStr = `${itemTotalWeight} ${unit}`;
+                            }
+                            
+                            return `
+                                <div class="item-row">
+                                    <div class="item-info">${itemName}${fineness ? ' - ' + fineness : ''}</div>
+                                    <div class="qty-info">Qty: <b>${itemWeightStr}</b></div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="total-info">Total: <b>${totalWeightStr}</b></div>
+                    <button class="loaded-btn" ${allLoaded ? 'disabled' : ''} onclick="markAllLoaded('${orderKeys.join(',')}')">${allLoaded ? 'All Loaded' : 'Mark All as Loaded'}</button>
+                </div>
+            `;
+        }
+
+        window.markAllLoaded = async function(orderKeysString) {
+            if (!orderKeysString) {
+                console.error('No orderKeys provided');
+                return;
+            }
+            
+            const orderKeys = orderKeysString.split(',');
+            console.log('Marking all as loaded:', orderKeys);
+            
+            // Find all orders in local data
+            const ordersToUpdate = [];
+            orderKeys.forEach(orderKey => {
+                const order = orders.find(o => {
+                    const key = generateOrderKey(o);
+                    return key === orderKey;
+                });
+                if (order) {
+                    ordersToUpdate.push(order);
+                } else {
+                    console.error('Order not found for key:', orderKey);
+                }
+            });
+            
+            if (ordersToUpdate.length === 0) {
+                alert('No orders found to update');
+                return;
+            }
+            
+            console.log('Found orders to update:', ordersToUpdate.length);
+            
+            // Disable the button and show loading state
+            const button = event.target;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Updating...';
+            button.style.background = '#9ca3af';
+            
+            try {
+                const currentTime = new Date().toISOString();
+                let successCount = 0;
+                let errorCount = 0;
+                
+                // Update each order individually
+                for (const order of ordersToUpdate) {
+                    const { data, error } = await supabase
+                        .from('orders_overall_copy')
+                        .update({ 
+                            loading_status: 'loaded',
+                            loading_time: currentTime
+                        })
+                        .eq('shopify_name', order.shopify_name)
+                        .eq('item_name', order.item_name)
+                        .eq('fineness', order.fineness)
+                        .eq('quantity', order.quantity)
+                        .eq('weight', order.weight);
+                    
+                    if (error) {
+                        console.error('Supabase error for order:', order, error);
+                        errorCount++;
+                    } else {
+                        console.log('Successfully updated order:', data);
+                        order.loading_status = 'loaded';
+                        order.loading_time = currentTime;
+                        successCount++;
+                    }
+                }
+                
+                if (errorCount > 0) {
+                    alert(`Updated ${successCount} orders, failed to update ${errorCount} orders`);
+                } else {
+                    console.log('Successfully updated all orders');
+                    renderOrders();
+                    // Show success message
+                    document.getElementById('debugArea').innerHTML = `<div style="color: green;">✓ All orders marked as loaded successfully at ${new Date(currentTime).toLocaleTimeString()}</div>`;
+                    setTimeout(() => {
+                        document.getElementById('debugArea').innerHTML = '';
+                    }, 3000);
+                }
+            } catch (err) {
+                console.error('Unexpected error:', err);
+                alert('Unexpected error occurred');
+            } finally {
+                // Reset button state
+                button.disabled = false;
+                button.textContent = originalText;
+                button.style.background = '#b91c1c';
+            }
+        }
+
+        // Real-time updates
+        function setupRealtime() {
+            supabase
+                .channel('orders_changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'orders_overall_copy' }, (payload) => {
+                    loadOrders();
+                })
+                .subscribe();
+        }
+
+        // Display today's date
+        function displayTodayDate() {
+            const today = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            const dateString = today.toLocaleDateString('en-US', options);
+            document.getElementById('todayDate').textContent = dateString;
+        }
+        
+        displayTodayDate();
+        loadOrders();
+        setupRealtime();
+    </script>
+</body>
+</html> 

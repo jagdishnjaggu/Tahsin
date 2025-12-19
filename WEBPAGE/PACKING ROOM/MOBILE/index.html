@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFlow: Packing</title>
+    <link rel="icon" type="image/png" href="logo/Mill Story logo.png" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f5f5;
+        color: #333;
+        line-height: 1.4;
+      }
+
+      .header {
+        background: white;
+        padding: 1rem 1rem 0.5rem 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .logo {
+        height: 48px;
+        width: 48px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        border: 2px solid #eee;
+        margin-right: 0.75rem;
+      }
+
+      .title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        text-align: center;
+        flex: 1;
+        margin: 0 1rem;
+      }
+
+      .time {
+        font-size: 0.8rem;
+        color: #666;
+        text-align: right;
+        min-width: 80px;
+      }
+
+      .summary {
+        background: white;
+        padding: 1rem;
+        margin: 0.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        max-width: 100%;
+      }
+
+      .summary-item {
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 0.8rem;
+      }
+
+      .summary-item .number {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #007bff;
+      }
+
+      .orders-container {
+        padding: 0.5rem;
+      }
+
+      .order-card {
+        background: white;
+        margin-bottom: 0.8rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: background 0.2s, border 0.2s;
+      }
+      .order-card.issue {
+        background: #f8d7da;
+        border: 2px solid #dc3545;
+      }
+      .order-card.priority {
+        background: linear-gradient(90deg, #ffe082 0%, #fffde7 100%);
+        border: 2px solid #ffd600;
+        position: relative;
+      }
+
+      .order-header {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        background: #f8f9fa;
+      }
+
+      .order-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 0.3rem;
+      }
+
+      .customer-name {
+        font-size: 0.85rem;
+        color: #666;
+      }
+
+      .order-items {
+        padding: 1rem;
+      }
+
+      .item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .item:last-child {
+        border-bottom: none;
+      }
+
+      .item-details {
+        flex: 1;
+      }
+
+      .item-name {
+        font-weight: 500;
+        color: #333;
+        font-size: 0.9rem;
+      }
+
+      .item-specs {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0.2rem;
+      }
+
+      .item-weight {
+        font-weight: 500;
+        color: #007bff;
+        font-size: 0.85rem;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 0.3rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        margin-top: 0.5rem;
+      }
+
+      .status-packed {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-unpacked {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status-delayed {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .status-error {
+        background: #f5c6cb;
+        color: #721c24;
+      }
+
+      .packed-time {
+        font-size: 0.8rem;
+        color: #28a745;
+        font-weight: 500;
+        margin-top: 0.5rem;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      .no-orders {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #666;
+      }
+
+      .no-orders h3 {
+        margin-bottom: 0.5rem;
+        color: #333;
+      }
+
+      .refresh-btn {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        cursor: pointer;
+        z-index: 1000;
+      }
+
+      .refresh-btn:active {
+        transform: scale(0.95);
+      }
+
+      .order-actions {
+        padding: 1rem;
+        border-top: 1px solid #eee;
+        background: #f8f9fa;
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .pack-btn, .issue-btn {
+        flex: 1;
+        padding: 0.8rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .pack-btn {
+        background: #28a745;
+        color: white;
+      }
+
+      .pack-btn:hover {
+        background: #218838;
+      }
+
+      .issue-btn {
+        background: #dc3545;
+        color: white;
+      }
+
+      .issue-btn:hover {
+        background: #c82333;
+      }
+
+      .pack-btn:active, .issue-btn:active {
+        transform: scale(0.98);
+      }
+
+      .issue-btn.active {
+        background: #b71c1c;
+        color: #fff;
+        font-weight: bold;
+        border: 2px solid #721c24;
+      }
+
+      .priority-label {
+        display: inline-block;
+        background: #ffd600;
+        color: #7c6500;
+        font-weight: bold;
+        border-radius: 6px;
+        padding: 0.2em 0.7em;
+        font-size: 0.9rem;
+        margin-left: 0.7em;
+        vertical-align: middle;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      }
+
+      @media (max-width: 480px) {
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .title {
+          font-size: 1rem;
+        }
+        
+        .order-card {
+          margin-bottom: 0.6rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-content">
+        <img src="logo/Mill Story logo.png" alt="Mill Story Logo" class="logo" />
+        <div class="title">MFlow: Packing</div>
+        <div class="time">
+          <div id="current-time">--:--</div>
+          <div id="current-date">--/--/----</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary" id="summary">
+      <div>Today's Orders Summary</div>
+      <div class="summary-grid" id="summary-grid">
+        <div class="summary-item">
+          <div class="number">-</div>
+          <div>Total</div>
+        </div>
+        <div class="summary-item">
+          <div class="number">-</div>
+          <div>Packed</div>
+        </div>
+        <div class="summary-item">
+          <div class="number">-</div>
+          <div>Unpacked</div>
+        </div>
+        <div class="summary-item">
+          <div class="number">-</div>
+          <div>Issued</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="orders-container" id="orders">
+      <div class="loading">Loading orders...</div>
+    </div>
+
+    <button class="refresh-btn" onclick="fetchOrders()" title="Refresh">
+      🔄
+    </button>
+
+    <script>
+      const supabase = window.supabase.createClient(
+        "https://sipnmwhfzdtqoqszgkmo.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M"
+      );
+
+      function updateTime() {
+        const now = new Date();
+        document.getElementById("current-time").innerText = 
+          now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        document.getElementById("current-date").innerText = 
+          now.toLocaleDateString();
+      }
+
+      function getStatusClass(status, errorCode) {
+        if (status === "packed") return "status-packed";
+        if (status === "delayed") return "status-delayed";
+        if (status === "error" || errorCode) return "status-error";
+        return "status-unpacked";
+      }
+
+      function getStatusText(status, errorCode) {
+        if (status === "packed") return "Packed";
+        if (status === "delayed") return "Delayed";
+        if (status === "error" || errorCode) return "Error";
+        return "Unpacked";
+      }
+
+      async function fetchOrders() {
+        const container = document.getElementById("orders");
+        const summaryGrid = document.getElementById("summary-grid");
+
+        try {
+          // Get today's date in YYYY-MM-DD format
+          const today = new Date().toISOString().split("T")[0];
+
+          const { data: allOrders, error: fetchError } = await supabase
+            .from("orders_overall_copy")
+            .select(
+              "shopify_name, customer_name, item_name, fineness, quantity, unit, weight, total, packing_status, packing_error_code, actual_packed_time, order_date, planned_delivery, route"
+            )
+            .eq("planned_delivery", today);
+
+          if (fetchError) {
+            throw fetchError;
+          }
+
+          // Group orders by shopify_name to get unique orders
+          const orderGroups = {};
+          allOrders.forEach((order) => {
+            if (!orderGroups[order.shopify_name]) {
+              orderGroups[order.shopify_name] = {
+                shopify_name: order.shopify_name,
+                customer_name: order.customer_name,
+                items: [],
+                packing_status: order.packing_status,
+                packing_error_code: order.packing_error_code,
+                actual_packed_time: order.actual_packed_time,
+                order_date: order.order_date,
+                planned_delivery: order.planned_delivery,
+                route: order.route,
+              };
+            }
+            orderGroups[order.shopify_name].items.push({
+              item_name: order.item_name,
+              fineness: order.fineness,
+              quantity: order.quantity,
+              unit: order.unit,
+              weight: order.weight,
+              total: order.total,
+            });
+          });
+
+          const uniqueOrders = Object.values(orderGroups);
+
+          // Prepare display groups
+          const packedOrders = uniqueOrders
+            .filter(o => o.packing_status === "packed")
+            .sort((a, b) => new Date(b.actual_packed_time) - new Date(a.actual_packed_time)); // newest to oldest
+          const priorityOrders = uniqueOrders.filter(o => o.packing_status === "priority");
+          const issuedOrders = uniqueOrders.filter(o => o.packing_status === "error" || o.packing_error_code);
+          const normalOrders = uniqueOrders.filter(o =>
+            (!o.packing_status || o.packing_status === "pending" || o.packing_status === "unpacked" || o.packing_status === "") &&
+            !o.packing_error_code
+          );
+
+          // Only show today's orders
+          let todayOrders = [
+            ...priorityOrders,
+            ...normalOrders,
+            ...issuedOrders
+          ].filter(order => order.planned_delivery === today);
+          
+          // Sort by route in true numeric order (r1, r2, r3, ..., r10, ...)
+          todayOrders = todayOrders.sort((a, b) => {
+            const getRouteNum = r => r && /^r(\d+)$/i.test(r) ? parseInt(r.slice(1), 10) : Infinity;
+            return getRouteNum(a.route) - getRouteNum(b.route);
+          });
+
+          if (todayOrders.length === 0 && packedOrders.filter(o => o.planned_delivery === today).length === 0) {
+            container.innerHTML = `
+              <div class="no-orders">
+                <h3>No Orders for Today</h3>
+                <p>No orders are scheduled for delivery today (${today})</p>
+              </div>
+            `;
+            summaryGrid.innerHTML = `
+              <div class="summary-item"><div class="number">0</div><div>Total</div></div>
+              <div class="summary-item"><div class="number">0</div><div>Packed</div></div>
+              <div class="summary-item"><div class="number">0</div><div>Unpacked</div></div>
+              <div class="summary-item"><div class="number">0</div><div>Issued</div></div>
+            `;
+            return;
+          }
+
+          // Render orders in the requested sequence
+          let html = "";
+          
+          // 1. Last 2 packed orders (at the very top)
+          const justPackedOrders = packedOrders
+            .filter(o => o.planned_delivery === today)
+            .slice(0, 2);
+
+          if (justPackedOrders.length > 0) {
+            justPackedOrders.forEach(order => {
+              const isPriority = order.packing_status === "priority";
+              html += `
+                <div class="order-card packed-card${isPriority ? ' priority' : ''}">
+                  <div class="order-header">
+                    <div class="order-title">Order: ${order.shopify_name}</div>
+                    ${order.customer_name ? `<div class="customer-name">Customer: ${order.customer_name}</div>` : ''}
+                    <div class="packed-time">✅ Just Packed at ${new Date(order.actual_packed_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${isPriority ? '<span class=\'priority-label\'>PRIORITY</span>' : ''}</div>
+                  </div>
+                  <div class="order-items">
+                    ${order.items.map(item => `
+                      <div class="item">
+                        <div class="item-details">
+                          <div class="item-name">${item.item_name}${item.fineness ? ` - ${item.fineness}` : ''}</div>
+                        </div>
+                        <div class="item-weight">${item.weight}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            });
+          }
+
+          // 2. Priority orders (all)
+          priorityOrders.filter(o => o.planned_delivery === today).forEach((order) => {
+            html += `
+              <div class="order-card priority">
+                <div class="order-header">
+                  <div class="order-title">Order: ${order.shopify_name}</div>
+                  ${order.customer_name ? `<div class="customer-name">Customer: ${order.customer_name}</div>` : ''}
+                </div>
+                <div class="order-items">
+                  ${order.items.map(item => `
+                    <div class="item">
+                      <div class="item-details">
+                        <div class="item-name">${item.item_name}${item.fineness ? ` - ${item.fineness}` : ''}</div>
+                      </div>
+                      <div class="item-weight">${item.weight}</div>
+                    </div>
+                  `).join('')}
+                </div>
+                <div class="order-actions">
+                  <button class="pack-btn" onclick="markAsPacked('${order.shopify_name}')">Mark as Packed</button>
+                  <button class="issue-btn" onclick="markAsIssue('${order.shopify_name}')">Report Issue</button>
+                </div>
+              </div>
+            `;
+          });
+
+          // 3. Issued orders (all)
+          issuedOrders.filter(o => o.planned_delivery === today).forEach((order) => {
+            html += `
+              <div class="order-card issue">
+                <div class="order-header">
+                  <div class="order-title">Order: ${order.shopify_name}</div>
+                  ${order.customer_name ? `<div class="customer-name">Customer: ${order.customer_name}</div>` : ''}
+                </div>
+                <div class="order-items">
+                  ${order.items.map(item => `
+                    <div class="item">
+                      <div class="item-details">
+                        <div class="item-name">${item.item_name}${item.fineness ? ` - ${item.fineness}` : ''}</div>
+                      </div>
+                      <div class="item-weight">${item.weight}</div>
+                    </div>
+                  `).join('')}
+                </div>
+                <div class="order-actions">
+                  <button class="pack-btn" onclick="markAsPacked('${order.shopify_name}')">Mark as Packed</button>
+                </div>
+              </div>
+            `;
+          });
+
+          // 4. Route orders (grouped by route)
+          const routeOrders = normalOrders.filter(o => o.planned_delivery === today);
+          const routeGroups = {};
+          
+          routeOrders.forEach(order => {
+            const route = order.route || 'no-route';
+            if (!routeGroups[route]) {
+              routeGroups[route] = [];
+            }
+            routeGroups[route].push(order);
+          });
+
+          // Sort routes numerically (r1, r2, r3, etc.)
+          const sortedRoutes = Object.keys(routeGroups).sort((a, b) => {
+            const getRouteNum = r => r && /^r(\d+)$/i.test(r) ? parseInt(r.slice(1), 10) : Infinity;
+            return getRouteNum(a) - getRouteNum(b);
+          });
+
+          sortedRoutes.forEach(route => {
+            routeGroups[route].forEach((order) => {
+              html += `
+                <div class="order-card">
+                  <div class="order-header">
+                    <div class="order-title">Order: ${order.shopify_name}</div>
+                    ${order.customer_name ? `<div class="customer-name">Customer: ${order.customer_name}</div>` : ''}
+                  </div>
+                  <div class="order-items">
+                    ${order.items.map(item => `
+                      <div class="item">
+                        <div class="item-details">
+                          <div class="item-name">${item.item_name}${item.fineness ? ` - ${item.fineness}` : ''}</div>
+                        </div>
+                        <div class="item-weight">${item.weight}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                  <div class="order-actions">
+                    <button class="pack-btn" onclick="markAsPacked('${order.shopify_name}')">Mark as Packed</button>
+                    <button class="issue-btn" onclick="markAsIssue('${order.shopify_name}')">Report Issue</button>
+                  </div>
+                </div>
+              `;
+            });
+          });
+
+          // 5. All packed orders (at the very bottom)
+          const allPackedOrders = packedOrders
+            .filter(o => o.planned_delivery === today)
+            .sort((a, b) => new Date(b.actual_packed_time) - new Date(a.actual_packed_time));
+
+          if (allPackedOrders.length > 0) {
+            allPackedOrders.forEach(order => {
+              const isPriority = order.packing_status === "priority";
+              html += `
+                <div class="order-card packed-card${isPriority ? ' priority' : ''}">
+                  <div class="order-header">
+                    <div class="order-title">Order: ${order.shopify_name}</div>
+                    ${order.customer_name ? `<div class="customer-name">Customer: ${order.customer_name}</div>` : ''}
+                    <div class="packed-time">✅ Packed at ${new Date(order.actual_packed_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${isPriority ? '<span class=\'priority-label\'>PRIORITY</span>' : ''}</div>
+                  </div>
+                  <div class="order-items">
+                    ${order.items.map(item => `
+                      <div class="item">
+                        <div class="item-details">
+                          <div class="item-name">${item.item_name}${item.fineness ? ` - ${item.fineness}` : ''}</div>
+                        </div>
+                        <div class="item-weight">${item.weight}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            });
+          }
+          container.innerHTML = html;
+
+          // Update summary
+          const totalCount = todayOrders.length;
+          const packedCount = packedOrders.filter(o => o.planned_delivery === today).length;
+          const issuedCount = issuedOrders.filter(o => o.planned_delivery === today).length;
+          const unpackedCount = normalOrders.filter(o => o.planned_delivery === today).length + priorityOrders.filter(o => o.planned_delivery === today).length;
+
+          summaryGrid.innerHTML = `
+            <div class="summary-item">
+              <div class="number">${totalCount}</div>
+              <div>Total</div>
+            </div>
+            <div class="summary-item">
+              <div class="number">${packedCount}</div>
+              <div>Packed</div>
+            </div>
+            <div class="summary-item">
+              <div class="number">${unpackedCount}</div>
+              <div>Unpacked</div>
+            </div>
+            <div class="summary-item">
+              <div class="number">${issuedCount}</div>
+              <div>Issued</div>
+            </div>
+          `;
+
+        } catch (fetchError) {
+          console.error('Error fetching orders:', fetchError);
+          container.innerHTML = `
+            <div class="no-orders">
+              <h3>Error Loading Orders</h3>
+              <p>Please check your connection and try again.</p>
+            </div>
+          `;
+        }
+      }
+
+      // Initialize
+      updateTime();
+      setInterval(updateTime, 1000);
+      fetchOrders();
+      
+      // Background refresh every 2 seconds (no page reload)
+      setInterval(() => {
+        console.log('Background refresh...');
+        fetchOrders();
+      }, 2000);
+      
+      // Supabase Realtime subscription for today's orders (no polling)
+      let ordersSubscription = null;
+      async function subscribeRealtime() {
+        if (ordersSubscription) {
+          await supabase.removeChannel(ordersSubscription);
+        }
+        const today = new Date().toISOString().split("T")[0];
+        ordersSubscription = supabase
+          .channel('orders_overall_copy-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'orders_overall_copy',
+              filter: `planned_delivery=eq.${today}`
+            },
+            (payload) => {
+              fetchOrders();
+            }
+          )
+          .subscribe();
+      }
+      subscribeRealtime();
+
+      async function markAsPacked(shopifyName) {
+        try {
+          const today = new Date().toISOString().split("T")[0];
+          const currentTime = new Date().toISOString();
+          
+          const { error } = await supabase
+            .from("orders_overall_copy")
+            .update({
+              packing_status: "packed",
+              packing_error_code: null,
+              actual_packed_time: currentTime
+            })
+            .eq("shopify_name", shopifyName)
+            .eq("planned_delivery", today);
+
+          if (error) {
+            console.error('Error marking as packed:', error);
+            alert('Failed to mark order as packed. Please try again.');
+            return;
+          }
+
+          // Refresh the orders to show updated status
+          fetchOrders();
+          
+        } catch (error) {
+          console.error('Error marking as packed:', error);
+          alert('Failed to mark order as packed. Please try again.');
+        }
+      }
+
+      async function markAsIssue(shopifyName) {
+        try {
+          const today = new Date().toISOString().split("T")[0];
+          // Do NOT update actual_packed_time
+          const { error } = await supabase
+            .from("orders_overall_copy")
+            .update({
+              packing_status: "error",
+              packing_error_code: "manual_issue"
+            })
+            .eq("shopify_name", shopifyName)
+            .eq("planned_delivery", today);
+
+          if (error) {
+            console.error('Error marking as issue:', error);
+            alert('Failed to mark order as issue. Please try again.');
+            return;
+          }
+
+          // Refresh the orders to show updated status
+          fetchOrders();
+          
+        } catch (error) {
+          console.error('Error marking as issue:', error);
+          alert('Failed to mark order as issue. Please try again.');
+        }
+      }
+    </script>
+  </body>
+</html>

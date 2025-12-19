@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iPad Card Layout</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f8f2ea;
+      font-family: Arial, sans-serif;
+      box-sizing: border-box;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 70px 120px 1.5fr 1fr;
+      gap: 12px;
+      padding: 12px;
+      height: 100vh;
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #faf3eb;
+      border: 2px solid #b6b1a9;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(80,60,40,0.08);
+      position: relative;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      font-size: 1.1rem;
+      color: #2d2d2d;
+      overflow: hidden;
+    }
+    .close-btn {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: #e75480;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      font-size: 1rem;
+      cursor: pointer;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    /* Card grid positions */
+    .card1 { grid-row: 1 / 2; }
+    .card2 { grid-row: 2 / 3; }
+    .middle-row { grid-row: 3 / 4; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card3 { grid-column: 1 / 2; }
+    .card4 { grid-column: 2 / 3; }
+    .bottom-row { grid-row: 4 / 5; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card5 { grid-column: 1 / 2; }
+    .card6 { grid-column: 2 / 3; }
+    /* Responsive for iPad landscape */
+    @media (max-width: 1100px) {
+      .container {
+        max-width: 100vw;
+        padding: 4px;
+        gap: 6px;
+      }
+      .middle-row, .bottom-row { gap: 6px; }
+      .card {
+        font-size: 1rem;
+        padding: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card card1">1</div>
+    <div class="card card2">2</div>
+    <div class="middle-row">
+      <div class="card card3">3 <button class="close-btn">×</button></div>
+      <div class="card card4">4 <button class="close-btn">×</button></div>
+    </div>
+    <div class="bottom-row">
+      <div class="card card5">5 <button class="close-btn">×</button></div>
+      <div class="card card6">6 <button class="close-btn">×</button></div>
+    </div>
+  </div>
+</body>
+</html> 

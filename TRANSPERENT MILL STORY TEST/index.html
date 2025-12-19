@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miller Entry - Milled Batch</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        #qrSection {
+            margin-top: 30px;
+            text-align: center;
+            display: none;
+        }
+
+        #qrSection.show {
+            display: block;
+        }
+
+        #qrcode {
+            margin: 20px auto;
+            display: inline-block;
+        }
+
+        .batch-info {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .batch-info p {
+            margin: 3px 0;
+        }
+
+        .batch-id {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .batch-details {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* QR container for PNG capture */
+        #qrContainer {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+        }
+
+        hr {
+            margin: 30px 0;
+            border: none;
+            border-top: 1px solid #ccc;
+        }
+
+        .download-btn {
+            background: #007bff;
+            margin-top: 15px;
+        }
+
+        .new-entry-btn {
+            background: #28a745;
+        }
+
+        /* Previous entries table */
+        .entries-section {
+            margin-top: 40px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .refresh-btn {
+            background: #666;
+            width: auto;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .no-entries {
+            color: #666;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Miller Entry</h1>
+
+    <div id="messageContainer"></div>
+
+    <form id="entryForm">
+        <div class="form-group">
+            <label for="attaType">Atta Type *</label>
+            <input type="text" id="attaType" placeholder="Enter atta type (e.g., Multigrain Atta)" required>
+        </div>
+
+        <div class="form-group">
+            <label for="fineness">Fineness *</label>
+            <input type="text" id="fineness" placeholder="Enter fineness (e.g., 80 mesh)" required>
+        </div>
+
+        <div class="form-group">
+            <label for="milledDate">Milled Date *</label>
+            <input type="date" id="milledDate" required>
+        </div>
+
+        <div class="form-group">
+            <label for="milledTime">Milled Time *</label>
+            <input type="time" id="milledTime" required>
+        </div>
+
+        <div class="form-group">
+            <label for="weight">Weight (Kg) *</label>
+            <input type="number" id="weight" step="0.01" min="0" placeholder="Enter weight in Kg" required>
+        </div>
+
+        <button type="submit">SAVE</button>
+    </form>
+
+    <div id="qrSection">
+        <hr>
+        <h2>Batch Saved Successfully</h2>
+        <div id="qrContainer">
+            <div id="qrcode"></div>
+            <div class="batch-info" id="batchInfo"></div>
+        </div>
+        <br>
+        <button class="download-btn" onclick="downloadPNG()">Download PNG</button>
+        <button class="new-entry-btn" onclick="resetForm()">New Entry</button>
+    </div>
+
+    <div class="entries-section">
+        <hr>
+        <h2>Previous Entries</h2>
+        <button class="refresh-btn" onclick="loadPreviousEntries()">Refresh</button>
+        <div id="entriesTable">
+            <p class="no-entries">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR Code Generator -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- html2canvas for PNG download -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://sipnmwhfzdtqoqszgkmo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Current batch ID for filename
+        let currentBatchId = null;
+
+        // Set today's date and current time as default
+        document.getElementById('milledDate').valueAsDate = new Date();
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('milledTime').value = `${hours}:${minutes}`;
+
+        // Handle form submission
+        document.getElementById('entryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const attaName = document.getElementById('attaType').value.trim();
+            const fineness = document.getElementById('fineness').value.trim();
+            const milledDate = document.getElementById('milledDate').value;
+            const milledTime = document.getElementById('milledTime').value;
+            const weight = document.getElementById('weight').value;
+
+            // Validation
+            if (!attaName || !fineness || !milledDate || !milledTime || !weight) {
+                showMessage('Please fill all required fields', 'error');
+                return;
+            }
+
+            try {
+                // Save to database
+                const { data, error } = await supabase
+                    .from('milled_batches')
+                    .insert([{
+                        atta_name: attaName,
+                        fineness: fineness,
+                        milled_date: milledDate,
+                        milled_time: milledTime,
+                        weight: parseFloat(weight)
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                const batchId = data[0].id;
+                currentBatchId = batchId;
+
+                // Generate QR code
+                generateQRCode(batchId, attaName, fineness, milledDate, milledTime, weight);
+
+                showMessage('Batch saved successfully!', 'success');
+
+                // Reload previous entries
+                loadPreviousEntries();
+
+            } catch (error) {
+                showMessage('Failed to save batch: ' + error.message, 'error');
+            }
+        });
+
+        // Generate QR Code
+        function generateQRCode(batchId, attaName, fineness, milledDate, milledTime, weight) {
+            // Clear previous QR code
+            document.getElementById('qrcode').innerHTML = '';
+
+            // QR code data
+            const qrData = JSON.stringify({
+                id: batchId,
+                atta: attaName,
+                fineness: fineness,
+                date: milledDate,
+                time: milledTime,
+                weight: weight + ' Kg'
+            });
+
+            // Generate QR code using qrcodejs library
+            new QRCode(document.getElementById('qrcode'), {
+                text: qrData,
+                width: 200,
+                height: 200,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            // Show batch info - simple format under QR
+            document.getElementById('batchInfo').innerHTML = `
+                <p class="batch-id">Batch #${batchId}</p>
+                <p class="batch-details">${attaName} | ${fineness}</p>
+                <p class="batch-details">${formatDate(milledDate)} | ${milledTime}</p>
+                <p class="batch-details">${weight} Kg</p>
+            `;
+
+            // Show QR section
+            document.getElementById('qrSection').classList.add('show');
+
+            // Scroll to QR section
+            document.getElementById('qrSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Download as PNG
+        function downloadPNG() {
+            const qrContainer = document.getElementById('qrContainer');
+            
+            html2canvas(qrContainer, {
+                backgroundColor: '#ffffff',
+                scale: 2
+            }).then(function(canvas) {
+                const link = document.createElement('a');
+                link.download = `batch_${currentBatchId}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(function(error) {
+                showMessage('Failed to download PNG: ' + error.message, 'error');
+            });
+        }
+
+        // Load previous entries
+        async function loadPreviousEntries() {
+            try {
+                const { data, error } = await supabase
+                    .from('milled_batches')
+                    .select('*')
+                    .order('id', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+
+                const container = document.getElementById('entriesTable');
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p class="no-entries">No entries found</p>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Atta Name</th>
+                                <th>Fineness</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Weight (Kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach(entry => {
+                    tableHTML += `
+                        <tr>
+                            <td>${entry.id}</td>
+                            <td>${entry.atta_name}</td>
+                            <td>${entry.fineness}</td>
+                            <td>${formatDate(entry.milled_date)}</td>
+                            <td>${entry.milled_time}</td>
+                            <td>${entry.weight}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += '</tbody></table>';
+                container.innerHTML = tableHTML;
+
+            } catch (error) {
+                document.getElementById('entriesTable').innerHTML = 
+                    '<p class="no-entries">Failed to load entries: ' + error.message + '</p>';
+            }
+        }
+
+        // Format date for display
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        // Show message
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    container.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        // Reset form for new entry
+        function resetForm() {
+            document.getElementById('entryForm').reset();
+            document.getElementById('milledDate').valueAsDate = new Date();
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('milledTime').value = `${hours}:${minutes}`;
+            document.getElementById('qrSection').classList.remove('show');
+            document.getElementById('messageContainer').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPreviousEntries();
+        });
+    </script>
+</body>
+</html>

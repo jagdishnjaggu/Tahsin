@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFlow: Milling</title>
+    <link rel="icon" type="image/png" href="logo/Mill Story logo.png" />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"
+    ></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f5f5;
+        overflow: hidden;
+      }
+
+      .parent {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: 0.2vh;
+        height: 100vh;
+        width: 100vw;
+        padding: 1vh;
+        box-sizing: border-box;
+      }
+
+      .parent > div {
+        border: 1px solid #ddd;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.5vh;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .div1 {
+        grid-column: span 3 / span 3;
+      }
+
+      .div3 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+        grid-column-start: 11;
+        grid-row-start: 1;
+      }
+
+      .div4 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+        grid-column-start: 11;
+        grid-row-start: 3;
+      }
+
+      .div5 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+        grid-column-start: 11;
+        grid-row-start: 5;
+      }
+
+      .div6 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+        grid-column-start: 11;
+        grid-row-start: 7;
+      }
+
+      .div7,
+      .div8,
+      .div9,
+      .div10,
+      .div11,
+      .div12,
+      .div13 {
+        grid-column: span 10 / span 10;
+        grid-column-start: 1;
+      }
+
+      .div7 {
+        grid-row-start: 2;
+      }
+
+      .div8 {
+        grid-row-start: 3;
+      }
+
+      .div9 {
+        grid-row-start: 4;
+      }
+
+      .div10 {
+        grid-row-start: 5;
+      }
+
+      .div11 {
+        grid-row-start: 6;
+      }
+
+      .div12 {
+        grid-row-start: 7;
+      }
+
+      .div13 {
+        grid-row-start: 8;
+      }
+
+      .div14 {
+        grid-column: span 7 / span 7;
+        grid-column-start: 4;
+        grid-row-start: 1;
+      }
+
+      #live-time {
+        font-size: clamp(2.4vh, 3.2vw, 3.5vh);
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: #222;
+      }
+
+      .machine-block {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5vh;
+        font-size: clamp(1.6vh, 2vw, 2.2vh);
+      }
+
+      .machine-label {
+        font-weight: bold;
+        font-size: clamp(2vh, 2.6vw, 2.5vh);
+        color: #000;
+      }
+
+      .machine-row {
+        font-size: clamp(1.8vh, 2.2vw, 2.2vh);
+      }
+
+      .machine-value,
+      .machine-temp {
+        font-weight: bold;
+        color: #1a73e8;
+      }
+
+      .card {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        background: #fff;
+        padding: 2vh 2vw;
+        row-gap: 1vh;
+        border-radius: 12px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        font-size: clamp(1.6vh, 1.9vw, 1.9vh);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .card h3 {
+        margin-top: 0.01vh;
+        margin-bottom: 0.01vh;
+        font-size: clamp(2.2vh, 2.5vw, 2.4vh);
+      }
+
+      .current-job {
+        width: 100%;
+        word-break: break-word;
+        white-space: normal;
+        margin-bottom: 0.01vh;
+        line-height: 1.4;
+        font-weight: 600;
+        font-size: 1.1em;
+      }
+
+      .upcoming-job {
+        color: #666;
+        font-size: clamp(1.54vh, 1.76vw, 1.98vh);
+        font-weight: 400;
+        margin-top: 0.01vh;
+      }
+
+      .status {
+        position: absolute;
+        top: 1.2vh;
+        right: 1.5vw;
+        padding: 0.3rem 0.8rem;
+        font-size: clamp(1.4vh, 1.6vw, 1.6vh);
+        border-radius: 4px;
+        font-weight: bold;
+        z-index: 1;
+      }
+
+      .status.milling {
+        background-color: #d1f5d3;
+        color: #1e7e34;
+      }
+
+      .status.queue {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+
+      .status.none {
+        background-color: #e2e3e5;
+        color: #6c757d;
+      }
+
+      .timing-indicator {
+        position: absolute;
+        bottom: 1.5vh;
+        right: 1.5vw;
+        width: 6vh;
+        height: 2.5vh;
+        border-radius: 4px;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .timing-indicator.on-time {
+        background-color: #28a745;
+      }
+
+      .timing-indicator.delayed {
+        background-color: #dc3545;
+      }
+
+      .info {
+        font-size: clamp(1.6vh, 2vw, 2.2vh);
+        color: #666;
+        line-height: 1.5;
+      }
+
+      .logo-container {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 4vw;
+        width: 100%;
+        height: 100%;
+      }
+
+      .logo-container img {
+        max-width: 12%;
+        max-height: 80%;
+        object-fit: contain;
+        border-radius: 12px;
+      }
+
+      .milling-plan-heading {
+        font-size: clamp(2.6vh, 3.2vw, 3.4vh);
+        font-weight: 600;
+        color: #1a73e8;
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="parent">
+      <div class="div1">
+        <h2 id="live-time">--:--:--</h2>
+      </div>
+
+      <div class="div3">
+        <div class="machine-block">
+          <span class="machine-label">Machine 1</span>
+          <span class="machine-row"
+            >RPM: <span id="m1r1" class="machine-value">--</span></span
+          >
+          <span class="machine-row"
+            >Temp: <span id="m1t1" class="machine-temp">--</span>°C</span
+          >
+        </div>
+      </div>
+
+      <div class="div4">
+        <div class="machine-block">
+          <span class="machine-label">Machine 2</span>
+          <span class="machine-row"
+            >RPM: <span id="m1r2" class="machine-value">--</span></span
+          >
+          <span class="machine-row"
+            >Temp: <span id="m1t2" class="machine-temp">--</span>°C</span
+          >
+        </div>
+      </div>
+
+      <div class="div5">
+        <div class="machine-block">
+          <span class="machine-label">Machine 3</span>
+          <span class="machine-row"
+            >RPM: <span id="m2r1" class="machine-value">--</span></span
+          >
+          <span class="machine-row"
+            >Temp: <span id="m2t1" class="machine-temp">--</span>°C</span
+          >
+        </div>
+      </div>
+
+      <div class="div6">
+        <div class="machine-block">
+          <span class="machine-label">Machine 4</span>
+          <span class="machine-row"
+            >RPM: <span id="m2r2" class="machine-value">--</span></span
+          >
+          <span class="machine-row"
+            >Temp: <span id="m2t2" class="machine-temp">--</span>°C</span
+          >
+        </div>
+      </div>
+
+      <div class="div7" id="block-M1"></div>
+      <div class="div8" id="block-M2"></div>
+      <div class="div9" id="block-M3"></div>
+      <div class="div10" id="block-M4"></div>
+      <div class="div11" id="block-M5"></div>
+      <div class="div12" id="block-M6"></div>
+      <div class="div13" id="block-M7"></div>
+      <div class="div14">
+        <div class="logo-container">
+          <img src="logo/Mill Story logo.png" alt="Mill Story Logo" />
+          <h2 class="milling-plan-heading">MFlow: Milling</h2>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const rpmTempUrl1 =
+        "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp_2.json";
+      const rpmTempUrl2 =
+        "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp_1.json";
+
+      async function fetchAndDisplayRPMTemp() {
+        try {
+          const [res1, res2] = await Promise.all([
+            fetch(rpmTempUrl1),
+            fetch(rpmTempUrl2),
+          ]);
+          const data1 = await res1.json();
+          const data2 = await res2.json();
+
+          document.getElementById("m1r1").innerText = data1?.rpm1 ?? "--";
+          document.getElementById("m1t1").innerText = data1?.temp1 ?? "--";
+          document.getElementById("m1r2").innerText = data1?.rpm2 ?? "--";
+          document.getElementById("m1t2").innerText = data1?.temp2 ?? "--";
+          document.getElementById("m2r1").innerText = data2?.rpm1 ?? "--";
+          document.getElementById("m2t1").innerText = data2?.temp1 ?? "--";
+          document.getElementById("m2r2").innerText = data2?.rpm2 ?? "--";
+          document.getElementById("m2t2").innerText = data2?.temp2 ?? "--";
+        } catch (error) {
+          console.error("Error fetching RPM/Temp data:", error);
+        }
+      }
+
+      fetchAndDisplayRPMTemp();
+      setInterval(fetchAndDisplayRPMTemp, 5000);
+
+      // Supabase logic
+      window.addEventListener("DOMContentLoaded", async () => {
+        const supabaseUrl = "https://sipnmwhfzdtqoqszgkmo.supabase.co";
+        const supabaseKey =
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M";
+        const client = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        const machines = ["M1", "M2", "M3", "M4", "M5", "M6", "M7"];
+
+        function formatTime(timeStr) {
+          if (!timeStr) return "--";
+          const [h, m] = timeStr.split(":");
+          const hour = parseInt(h);
+          const suffix = hour >= 12 ? "PM" : "AM";
+          const hour12 = hour % 12 || 12;
+          return `${hour12}:${m} ${suffix}`;
+        }
+
+        function formatActualTime(timestamp) {
+          if (!timestamp) return "--";
+          // Extract time directly from timestamp string (HH:MM:SS format)
+          const timeMatch = timestamp.match(/(\d{2}):(\d{2}):\d{2}/);
+          if (timeMatch) {
+            const hours = parseInt(timeMatch[1]);
+            const minutes = timeMatch[2];
+            const suffix = hours >= 12 ? "PM" : "AM";
+            const hour12 = hours % 12 || 12;
+            return `${hour12}:${minutes} ${suffix}`;
+          }
+          return "--";
+        }
+
+        function checkTimingStatus(job) {
+          if (!job || !job.starttime) return "on-time";
+          
+          // Parse scheduled start time
+          const [scheduledHour, scheduledMinute] = job.starttime.split(":").map(Number);
+          const scheduledTime = new Date();
+          scheduledTime.setHours(scheduledHour, scheduledMinute, 0, 0);
+          
+          // Get current time
+          const currentTime = new Date();
+          
+          // If job hasn't started yet (no actual_starttime), check if it's past scheduled time
+          if (!job.actual_starttime) {
+            const delayMinutes = (currentTime - scheduledTime) / (1000 * 60);
+            return delayMinutes > 5 ? "delayed" : "on-time";
+          }
+          
+          // If job has started, check if it started late
+          const actualTimeMatch = job.actual_starttime.match(/(\d{2}):(\d{2}):\d{2}/);
+          if (!actualTimeMatch) return "on-time";
+          
+          const actualHour = parseInt(actualTimeMatch[1]);
+          const actualMinute = parseInt(actualTimeMatch[2]);
+          const actualTime = new Date();
+          actualTime.setHours(actualHour, actualMinute, 0, 0);
+          
+          // Calculate delay in minutes
+          const delayMinutes = (actualTime - scheduledTime) / (1000 * 60);
+          
+          // Consider delayed if more than 5 minutes late
+          return delayMinutes > 5 ? "delayed" : "on-time";
+        }
+
+        async function loadDashboard() {
+          for (let machine of machines) {
+            const { data: jobs, error } = await client
+              .from("millinglogs_copy")
+              .select("*")
+              .eq("machine", machine)
+              .order("starttime", { ascending: true });
+
+            const block = document.getElementById(`block-${machine}`);
+
+            if (error || !jobs.length) {
+              block.innerHTML = `
+                <div class="card">
+                  <h3>${machine}</h3>
+                  <div class="info">No job available</div>
+                  <span class="status none">No job</span>
+                </div>
+              `;
+              continue;
+            }
+
+            let active =
+              jobs.find((j) => j.status === "milling") ||
+              jobs.find((j) => j.status === "in queue");
+            const status = active?.status || "none";
+
+            // Find the next actual grain (skip Cleaning and Halted)
+            let nextGrain = jobs[1];
+            let nextGrainIndex = 1;
+            
+            if (nextGrain && (nextGrain.graintomill === "Cleaning" || nextGrain.graintomill === "Halted")) {
+              // Look for the next grain after Cleaning/Halted
+              for (let i = 2; i < jobs.length; i++) {
+                if (jobs[i] && jobs[i].graintomill !== "Cleaning" && jobs[i].graintomill !== "Halted") {
+                  nextGrain = jobs[i];
+                  nextGrainIndex = i;
+                  break;
+                }
+              }
+            }
+
+            // Create upcoming job text
+            let upcomingJobText = "";
+            if (jobs[1]) {
+              if (active && (active.graintomill === "Cleaning" || active.graintomill === "Halted")) {
+                // Current job is Cleaning/Halted, show next grain
+                upcomingJobText = `⏭ Next: ${nextGrain?.graintomill || "--"} 🔹 Qty: ${nextGrain?.quantity || "--"} 🔹 coarseness: ${nextGrain?.coarseness || "--"}`;
+              } else if (jobs[1].graintomill === "Cleaning" || jobs[1].graintomill === "Halted") {
+                // Next job is Cleaning/Halted, show "next cleaning - next grain"
+                const nextGrainAfterCleaning = nextGrain;
+                upcomingJobText = `⏭ Next: ${jobs[1].graintomill} - ⏭ Next: ${nextGrainAfterCleaning?.graintomill || "--"} 🔹 Qty: ${nextGrainAfterCleaning?.quantity || "--"} 🔹 coarseness: ${nextGrainAfterCleaning?.coarseness || "--"}`;
+              } else {
+                upcomingJobText = `⏭ Next: ${jobs[1].graintomill} 🔹 Qty: ${jobs[1].quantity || "--"} 🔹 coarseness: ${jobs[1].coarseness || "--"}`;
+              }
+            } else {
+              upcomingJobText = `⏭ Next: -- 🔹 Qty: -- 🔹 coarseness: --`;
+            }
+
+            const timingStatus = active ? checkTimingStatus(active) : "on-time";
+
+            block.innerHTML = `
+              <div class="card">
+                <h3>${machine}</h3>
+                ${
+                  active
+                    ? `<div class="current-job">
+                        🔹 Grain: ${active.graintomill} 
+                        🔹 Qty: ${active.quantity}
+                        🔹 coarseness: ${active.coarseness}
+                        🔹 Start: ${formatTime(active.starttime)}
+                        🔹 Actual Start: ${formatActualTime(active.actual_starttime)}
+                        🔹 Stop: ${formatTime(active.stoptime)}
+                        🔹 Duration: ${active.duration}
+                      </div>
+                      <div class="upcoming-job">
+                        ${upcomingJobText}
+                      </div>
+                      <span class="status ${
+                        status === "milling" ? "milling" : "queue"
+                      }">${status}</span>
+                      <div class="timing-indicator ${timingStatus}"></div>`
+                    : `<div class="info">No job in progress</div><span class="status none">No job</span><div class="timing-indicator on-time"></div>`
+                }
+              </div>
+            `;
+          }
+        }
+
+        loadDashboard();
+        setInterval(loadDashboard, 5000);
+      });
+      function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        document.getElementById("live-time").innerText = timeString;
+      }
+
+      setInterval(updateTime, 1000);
+      updateTime(); // initial call
+    </script>
+  </body>
+</html>

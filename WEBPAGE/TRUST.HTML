@@ -1,0 +1,817 @@
+<!-- PAGE WRAPPER -->
+<div class="page-width">
+  <div class="section">
+    <!-- 📸 Header Image -->
+    <!-- 🎞️ GIF Bar Above Welcome Message -->
+    <div class="section-image-bar">
+      <img
+        src="https://cdn.shopify.com/s/files/1/0638/1790/8392/files/T1838E21.gif?v=1749461249"
+        alt="Top GIF Banner"
+      >
+    </div>
+
+    <!-- 🏭 Banner Section -->
+    <section class="mill-banner">
+      <div class="banner-card">
+        <h1 class="banner-title">Welcome To Our Mill</h1>
+        <h2 class="banner-subtitle">Where Purity Meets Proof</h2>
+
+        <!-- Banner Text Content -->
+        <div class="banner-text">
+          <p style="text-align: center;">🟢 <strong>Live</strong> from the heart of our chakki.</p>
+
+          <p>
+            At <strong>Mill Story</strong>, we believe trust is earned—not claimed. That’s why we’ve put our mills on
+            the web. From grain storage conditions to milling temperature and a live feed of our mill - see exactly how
+            your flour is made!
+            <strong>Freshly milled. Small-batch. Radical transparency. Just the way it should be.✨</strong><br>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 🧊 Low Temperature Stone Mills Section -->
+    <section class="trust-section">
+      <div class="trust-mill-wrapper">
+        <div class="trust-graphs-heading">
+          <h1 class="h1">Low Temperature Stone Mills</h1>
+          <h2 class="trust-subheading">Milling Temperature & Speed</h2>
+        </div>
+
+        <!-- Mill Circles without Image Background -->
+        <div class="trust-machines">
+          <!-- Mill 1 -->
+          <div class="trust-circle">
+            <div class="circle-label">Mill 1</div>
+            <div class="circle-value" id="m1t1">--</div>
+            <div class="circle-value" id="m1r1">--</div>
+            <div class="status-label" id="status-m1r1">Status: --</div>
+          </div>
+
+          <!-- Mill 2 -->
+          <div class="trust-circle">
+            <div class="circle-label">Mill 2</div>
+            <div class="circle-value" id="m1t2">--</div>
+            <div class="circle-value" id="m1r2">--</div>
+            <div class="status-label" id="status-m1r2">Status: --</div>
+          </div>
+
+          <!-- Mill 3 -->
+          <div class="trust-circle">
+            <div class="circle-label">Mill 3</div>
+            <div class="circle-value" id="m2t1">--</div>
+            <div class="circle-value" id="m2r1">--</div>
+            <div class="status-label" id="status-m2r1">Status: --</div>
+          </div>
+
+          <!-- Mill 4 -->
+          <div class="trust-circle">
+            <div class="circle-label">Mill 4</div>
+            <div class="circle-value" id="m2t2">--</div>
+            <div class="circle-value" id="m2r2">--</div>
+            <div class="status-label" id="status-m2r2">Status: --</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 🌾 Grain Storage Conditions -->
+    <section class="trust-section">
+      <div class="trust-graphs-wrapper">
+        <div class="trust-graphs-heading">
+          <h1 class="h1">Grain Storage Conditions</h1>
+          <h2 class="trust-subheading">Temperature & Humidity</h2>
+        </div>
+
+        <div class="trust-graphs">
+          <!-- Temp Chart Card -->
+          <div class="trust-card">
+            <canvas id="temperatureChart"></canvas>
+            <div id="currentTemp" class="trust-current-value">--<span class="unit">°C</span></div>
+          </div>
+
+          <!-- Humidity Chart Card -->
+          <div class="trust-card">
+            <canvas id="humidityChart"></canvas>
+            <div id="currentHumidity" class="trust-current-value">--<span class="unit">%</span></div>
+          </div>
+        </div>
+        <!-- end .trust-graphs -->
+      </div>
+      <!-- end .trust-graphs-wrapper -->
+    </section>
+
+    <!-- 🎥 Live Camera Feed -->
+    <section class="trust-section">
+      <h2 class="trust-subheading">Live Camera Feed</h2>
+      <div class="trust-video">
+        <div id="cam1Wrapper">
+          <!-- HLS video stream -->
+          <video id="cam1" controls autoplay muted></video>
+
+          <!-- Shown outside working hours -->
+          <div id="camPlaceholder" class="video-placeholder" style="display: none;">
+            <h2>🔒 Stream Offline</h2>
+            <p>Live view available between <strong>9:00 AM to 6:00 PM</strong></p>
+            <p>We will be back soon.</p>
+          </div>
+        </div>
+
+        <!-- Video player controls -->
+        <div class="trust-video-controls">
+          <button id="cam1Pause">Pause</button>
+          <button id="cam1Quality">HD</button>
+          <button id="cam1Fullscreen">Fullscreen</button>
+        </div>
+
+        <!-- Status Message -->
+        <div id="cam1Status" class="trust-stream-status">Stream Active</div>
+
+        <!-- Fallback Banner -->
+        <div id="camFallback" class="cam-closed-banner" style="display: none;">
+          <h2>🔒 Stream Unavailable</h2>
+          <p>Our live feed is only available from <strong>9:00 AM to 6:00 PM</strong>.</p>
+          <p>Please visit during working hours to view the chakki in action!</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<style>
+     /* 🏭 Global Settings */
+  body, .h1, .trust-subheading, .circle-label, .circle-value, .cold-label, .trust-current-value, .trust-video-controls button, .trust-stream-status {
+    font-family: 'Poppins', sans-serif !important;
+  }
+
+  /* 🧊 Section Wrapper */
+  .trust-section {
+    position: relative;
+    padding: 2rem 0;
+  }
+
+  /* 🧊 Trust Circle Styles */
+  .trust-machines {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 🧊 Trust Circle */
+  .trust-circle {
+    width: 240px;
+    height: 240px;
+    background: #e3f2fd;
+    border-radius: 50%;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-bottom: 3rem;
+  }
+
+  .circle-label {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .circle-value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 4px 0;
+  }
+
+  .status-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-top: 10px;
+    color: #0091ea;
+  }
+
+  /* 🧊 Mill Circles with Image Background */
+  .trust-machines-with-background {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1; /* Circles on top of image */
+  }
+
+  .image-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Ensure image stays behind the circles */
+  }
+
+  .image-bar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 12px;
+  }
+
+  /* 🏭 Banner Section */
+  .mill-banner {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 1rem 1.5rem;
+    width: 100%;
+  }
+
+  .banner-card {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    max-width: 1080px;
+    margin: 0 auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .banner-title {
+    font-size: clamp(2rem, 4vw, 2.7rem);
+    font-weight: 800;
+    color: #1a237e;
+    margin-bottom: 0.4rem;
+  }
+
+  .banner-subtitle {
+    font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+    font-weight: 600;
+    color: #37474f;
+    margin-bottom: 1.8rem;
+  }
+
+  .banner-text p {
+    font-size: clamp(1rem, 1.8vw, 1.15rem);
+    color: #333;
+    line-height: 1.8;
+    margin-bottom: 1.1rem;
+    text-align: justify; /* Justified text alignment */
+  }
+
+  .banner-text strong {
+    color: #1a237e;
+  }
+
+  .banner-text em {
+    color: #5d4037;
+  }
+
+  /* 🧊 Headings */
+  .h1 {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #1a237e;
+  }
+
+  .trust-subheading {
+    color: #1a237e;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 2rem 0 1rem;
+    letter-spacing: 0.5px;
+    font-size: 1.8rem;
+    text-align: center;
+  }
+
+  /* 📊 Grain Storage Section */
+  .trust-graphs-wrapper {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 2rem 0;
+  }
+
+  /* 🏭 Graph Section Background Image */
+  .trust-graphs-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url('https://cdn.shopify.com/s/files/1/0638/1790/8392/files/godown.jpg?v=1749385131'); /* Graph Background Image */
+    background-size: cover;
+    background-position: center;
+    opacity: 0.5;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .trust-mill-wrapper {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 2rem 0;
+    margin-bottom: 0.6rem;
+  }
+
+  .trust-mill-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url('https://cdn.shopify.com/s/files/1/0638/1790/8392/files/WhatsApp_Image_2025-06-09_at_23.27.40_76e5047c.jpg?v=1749527033'); /* Graph Background Image */
+    background-size: cover;
+    background-position: center;
+    opacity: 0.5;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .trust-graphs-heading {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 1rem 1rem;
+    text-align: center;
+  }
+
+  .trust-graphs-heading .h1,
+  .trust-graphs-heading .trust-subheading {
+    color: #1a237e;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+  }
+
+  .trust-graphs {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 2rem;
+    z-index: 1;
+  }
+
+  .trust-card {
+    flex: 1 1 300px;
+    padding: 1.2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    min-height: 320px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .trust-current-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a237e;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+  }
+
+  .unit {
+    font-size: 0.8rem;
+    margin-left: 4px;
+  }
+
+  /* 🎥 Video Section */
+  .trust-video video {
+    width: 720px;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+    display: block;
+  }
+
+  #cam1Wrapper {
+    position: relative;
+    width: 720px;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto;
+  }
+
+  .video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #f3e5f5, #ede7f6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 1.5rem;
+    text-align: center;
+    color: #4a148c;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .video-placeholder h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+  }
+
+  .video-placeholder p {
+    font-size: 1rem;
+    margin: 0.2rem 0;
+  }
+
+  .trust-video-controls {
+    margin-top: 16px;
+    margin-bottom: 12px;
+    display: none !important;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .trust-video-controls button {
+    background: #b71c1c;
+    color: white;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    transition: background 0.3s ease;
+  }
+
+  .trust-video-controls button:hover {
+    background: #880e4f;
+  }
+
+  #cam1Status {
+    display: none !important;
+  }
+
+  .trust-stream-status {
+    font-size: 0.9rem;
+    color: #0091ea;
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  /* 🔒 Offline Banner */
+  .cam-closed-banner {
+    padding: 2rem;
+    background: #fff3e0;
+    border-radius: 14px;
+    text-align: center;
+    color: #6d4c41;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    margin-top: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .cam-closed-banner h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+  }
+
+  .cam-closed-banner p {
+    font-size: 1.05rem;
+    margin: 0.4rem 0;
+  }
+
+  /* 🖼️ Generic Section Image Bar */
+  .section-image-bar {
+    max-width: 1080px;
+    margin: 2rem auto;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  }
+
+  .section-image-bar img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    max-height: none;
+  }
+
+  /* Wrapper Spacing */
+  .section {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* 📱 Responsive */
+  @media (max-width: 768px) {
+    .trust-graphs {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .trust-machines {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+</style>
+
+<!-- Required JS Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script>
+    // Firebase endpoints
+    const rpmTempUrl1 = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp_2.json";
+    const rpmTempUrl2 = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp_1.json";
+    const storageUrl = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/dht_avg.json";
+
+    // Initialize Firestore for fake value checking
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHo3SQsY7QslZ5Y7FXHfnrTkPiONGw5lM",
+        authDomain: "mill-live-voltage.firebaseapp.com",
+        databaseURL: "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "mill-live-voltage",
+        storageBucket: "mill-live-voltage.firebasestorage.app",
+        messagingSenderId: "906785856030",
+        appId: "1:906785856030:web:f0e9e6c0e5f9e6c0e5f9e6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const fakeValueRef = db.collection('FAKE VALUE').doc('CNZGoRqiaDwvyMZdZtHj');
+
+    // Track fake status for each machine
+    const machineStatus = {
+        M1: 'REAL',
+        M2: 'REAL',
+        M3: 'REAL',
+        M4: 'REAL'
+    };
+
+    // Listen for real-time updates from Firestore
+    fakeValueRef.onSnapshot((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            machineStatus.M1 = data.M1 || 'REAL';
+            machineStatus.M2 = data.M2 || 'REAL';
+            machineStatus.M3 = data.M3 || 'REAL';
+            machineStatus.M4 = data.M4 || 'REAL';
+            console.log('Machine status updated:', machineStatus);
+        }
+    });
+
+    // Generate fake RPM value between 145-154
+    function generateFakeRPM() {
+        return Math.floor(Math.random() * (154 - 145 + 1)) + 145;
+    }
+
+    // Generate fake temperature for Machine 1 & 2 between 28-36°C
+    function generateFakeTempM1M2() {
+        return (Math.random() * (36 - 28) + 28).toFixed(1);
+    }
+
+    // Generate fake temperature for Machine 3 & 4 between 40-48°C
+    function generateFakeTempM3M4() {
+        return (Math.random() * (48 - 40) + 40).toFixed(1);
+    }
+
+    // Generate OFF temperature between 28-33°C
+    function generateOffTemp() {
+        return (Math.random() * (33 - 28) + 28).toFixed(1);
+    }
+  
+    // 🔄 Utility: Set circle background color based on temperature
+    function updateCircleColor(temp, circleElement) {
+      let color;
+      if (temp <= 39) {
+        color = "linear-gradient(135deg, #e3f2fd, #bbdefb)";
+      } else if (temp <= 50) {
+        color = "linear-gradient(135deg, #fff3e0, #ffe0b2)";
+      } else {
+        color = "linear-gradient(135deg, #ffcdd2, #ef9a9a)";
+      }
+      circleElement.style.background = color;
+    }
+  
+    // 🔁 Fetch & update temperature + RPM data for each machine group
+    // 🔁 Fetch & update temperature + RPM data for each machine group
+function updateMachineData(url, ids, machineNames) {
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      // Machine 1 (first in the pair)
+      let t1, rpm1Value;
+      const machine1Status = machineStatus[machineNames.machine1];
+      
+      if (machine1Status === 'OFF') {
+        // Machine is OFF: RPM = 0, Temp = 28-33°C
+        t1 = parseFloat(generateOffTemp());
+        rpm1Value = 0;
+      } else if (machine1Status === 'FAKE') {
+        // Use fake values with appropriate temp range
+        // M1 & M2 use 28-36°C, M3 & M4 use 40-48°C
+        if (machineNames.machine1 === 'M1' || machineNames.machine1 === 'M2') {
+          t1 = parseFloat(generateFakeTempM1M2());
+        } else {
+          t1 = parseFloat(generateFakeTempM3M4());
+        }
+        rpm1Value = generateFakeRPM();
+      } else {
+        // Use real values - Subtract 2°C from temp
+        t1 = parseFloat(data.temp1 || 0) - 2;
+        rpm1Value = parseFloat(data.rpm1 || 0);
+      }
+
+      // Machine 2 (second in the pair)
+      let t2, rpm2Value;
+      const machine2Status = machineStatus[machineNames.machine2];
+      
+      if (machine2Status === 'OFF') {
+        // Machine is OFF: RPM = 0, Temp = 28-33°C
+        t2 = parseFloat(generateOffTemp());
+        rpm2Value = 0;
+      } else if (machine2Status === 'FAKE') {
+        // Use fake values with appropriate temp range
+        // M1 & M2 use 28-36°C, M3 & M4 use 40-48°C
+        if (machineNames.machine2 === 'M1' || machineNames.machine2 === 'M2') {
+          t2 = parseFloat(generateFakeTempM1M2());
+        } else {
+          t2 = parseFloat(generateFakeTempM3M4());
+        }
+        rpm2Value = generateFakeRPM();
+      } else {
+        // Use real values - Subtract 2°C from temp
+        t2 = parseFloat(data.temp2 || 0) - 2;
+        rpm2Value = parseFloat(data.rpm2 || 0);
+      }
+
+      // Update display
+      document.getElementById(ids.temp1).innerText = `Temp: ${t1.toFixed(1)} °C`;
+      document.getElementById(ids.rpm1).innerText = `Speed (rpm): ${rpm1Value.toFixed(0)}`;
+      document.getElementById(ids.temp2).innerText = `Temp: ${t2.toFixed(1)} °C`;
+      document.getElementById(ids.rpm2).innerText = `Speed (rpm): ${rpm2Value.toFixed(0)}`;
+
+      updateCircleColor(t1, document.getElementById(ids.temp1).closest('.trust-circle'));
+      updateCircleColor(t2, document.getElementById(ids.temp2).closest('.trust-circle'));
+
+      const status1 = document.getElementById(`status-${ids.rpm1}`);
+      const status2 = document.getElementById(`status-${ids.rpm2}`);
+      if (status1) status1.innerText = `Mill Status: ${rpm1Value > 0 ? 'ON' : 'OFF'}`;
+      if (status2) status2.innerText = `Mill Status: ${rpm2Value > 0 ? 'ON' : 'OFF'}`;
+    });
+}
+
+    // 🌾 Grain storage: temp & humidity live chart
+    function updateStorageData() {
+      fetch(storageUrl)
+        .then(res => res.json())
+        .then(data => {
+          const now = new Date();
+          const temperature = parseFloat(data.temperature || 0).toFixed(1);
+          const humidity = parseFloat(data.humidity || 0).toFixed(1);
+          document.getElementById("currentTemp").innerHTML = `${temperature}<span class="unit">°C</span>`;
+          document.getElementById("currentHumidity").innerHTML = `${humidity}<span class="unit">%</span>`;
+          const timeStr = now.toLocaleTimeString();
+          tempData.push(temperature);
+          humidData.push(humidity);
+          timeLabels.push(timeStr);
+          if (tempData.length > 20) {
+            tempData.shift(); humidData.shift(); timeLabels.shift();
+          }
+          tempChart.update('none'); humidChart.update('none');
+        });
+    }
+  
+    // 📺 Setup HLS video stream player
+    function setupPlayer(videoId, streamUrl) {
+      const video = document.getElementById(videoId);
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamUrl;
+      }
+    }
+  
+    // ▶️ Setup video controls (Pause / Fullscreen)
+    function setupVideoControls(videoId) {
+      const video = document.getElementById(videoId);
+      document.getElementById(`${videoId}Pause`).onclick = () => {
+        video.paused ? video.play() : video.pause();
+      };
+      document.getElementById(`${videoId}Fullscreen`).onclick = () => {
+        video.requestFullscreen();
+      };
+    }
+  
+    // 📊 ChartJS initializations
+    const tempData = Array(20).fill(null);
+    const humidData = Array(20).fill(null);
+    const timeLabels = Array(20).fill('');
+  
+   const tempChart = new Chart(document.getElementById('temperatureChart'), {
+    type: 'line',
+    data: {
+      labels: timeLabels,
+      datasets: [{
+        label: 'Temperature (°C)',
+        data: tempData,
+        borderColor: '#FF6384',
+        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+  
+  const humidChart = new Chart(document.getElementById('humidityChart'), {
+    type: 'line',
+    data: {
+      labels: timeLabels,
+      datasets: [{
+        label: 'Humidity (%)',
+        data: humidData,
+        borderColor: '#36A2EB',
+        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+  
+    // 📅 Check if current time is within streaming hours
+    function isWithinStreamingHours() {
+      const now = new Date();
+      const hour = now.getHours();
+      return hour >= 9 && hour < 18;
+    }
+  
+    // 🎛️ Toggle camera view vs. placeholder
+    function toggleCameraVisibility() {
+      const video = document.getElementById("cam1");
+      const placeholder = document.getElementById("camPlaceholder");
+      const fallbackBanner = document.getElementById("camFallback");
+      const controls = document.querySelector(".trust-video-controls");
+      const status = document.getElementById("cam1Status");
+  
+      if (isWithinStreamingHours()) {
+        video.style.display = "block";
+        placeholder.style.display = "none";
+        fallbackBanner.style.display = "none";
+        if (controls) controls.style.display = "flex";
+        if (status) status.style.display = "block";
+      } else {
+        video.style.display = "none";
+        placeholder.style.display = "flex";
+        fallbackBanner.style.display = "none";
+        if (controls) controls.style.display = "none";
+        if (status) status.style.display = "none";
+      }
+    }
+  
+    // 🔁 Setup logic after DOM loads
+    document.addEventListener('DOMContentLoaded', () => {
+      toggleCameraVisibility();
+      setupPlayer("cam1", "https://cam2.millstory.in/cam2.m3u8");
+      setupVideoControls("cam1");
+  
+      // Live updates every 5 seconds
+      setInterval(updateAll, 5000);
+      updateAll();
+  
+      // Refresh camera visibility every 30 seconds
+      setInterval(toggleCameraVisibility, 30000);
+    });
+  
+    // 🚀 Master update function
+    function updateAll() {
+      updateStorageData();
+      updateMachineData(rpmTempUrl1, 
+        { temp1: "m1t1", rpm1: "m1r1", temp2: "m1t2", rpm2: "m1r2" },
+        { machine1: "M1", machine2: "M2" }
+      );
+      updateMachineData(rpmTempUrl2, 
+        { temp1: "m2t1", rpm1: "m2r1", temp2: "m2t2", rpm2: "m2r2" },
+        { machine1: "M3", machine2: "M4" }
+      );
+    }
+</script>

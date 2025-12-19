@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFlow: Dispatching</title>
+    <link rel="icon" type="image/png" href="logo/Mill Story logo.png">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f7fafc;
+            min-height: 100vh;
+            padding: 8px;
+            overflow-x: hidden;
+            font-size: 0.8em;
+        }
+
+        .container {
+            max-width: 100vw;
+            margin: 0 auto;
+            height: 100vh;
+            padding: 2px;
+        }
+
+        .parent {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .routes-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
+            padding: 0 2px;
+            flex: 1;
+        }
+
+        .routes-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .routes-container::-webkit-scrollbar-track {
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+
+        .routes-container::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        .routes-container::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        .div1 {
+            grid-column: 1 / -1;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 4px;
+        }
+
+        .header-info {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+            margin-left: 12px;
+        }
+
+        .header-title {
+            font-size: 1.44rem;
+            font-weight: 700;
+            color: #1a202c;
+            letter-spacing: -0.02em;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            white-space: nowrap;
+        }
+
+        .header-stats {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.864rem;
+            color: #4a5568;
+            font-weight: 500;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: #f7fafc;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.768rem;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 0.864rem;
+        }
+
+        .datetime {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #4a5568;
+            text-align: right;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f7fafc;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            min-width: 224px;
+        }
+
+        .route-column {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 8px 8px 8px 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            min-width: 360px;
+            max-width: 360px;
+            height: calc(100vh - 80px);
+        }
+
+        .route-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: #fff;
+            border-radius: 6px;
+            color: #222;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            border: 1px solid #e2e8f0;
+        }
+
+        .route-name {
+            font-size: 1.04rem;
+            font-weight: 500;
+            color: #222;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .route-icon {
+            background: #f1f5f9;
+            color: #222;
+            padding: 4px;
+            border-radius: 4px;
+            font-size: 0.96rem;
+        }
+
+        .order-count {
+            background: #f1f5f9;
+            color: #222;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .order-card {
+            background: #ffffff;
+            border-radius: 6px;
+            padding: 12px 12px 8px 12px;
+            border-left: 3px solid #000000;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            margin-bottom: 3px;
+            border: 1px solid #edf2f7;
+        }
+
+        .order-card.delivered {
+            background: #f0fdf4;
+            border-left: 3px solid #22c55e;
+            border: 1px solid #bbf7d0;
+        }
+
+        .order-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .customer-name {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: #2d3748;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .status-chip {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.64rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #e0e7ef;
+            color: #2563eb;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .status-chip.packed {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        .status-chip.loaded {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .items-list {
+            margin-bottom: 8px;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .item-row:last-child {
+            border-bottom: none;
+        }
+        .item-details {
+            font-size: 0.8rem;
+            color: #2d3748;
+            font-weight: 400;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .item-meta {
+            font-size: 0.68rem;
+            color: #718096;
+            font-weight: 600;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .order-total {
+            padding-top: 6px;
+            border-top: 2px solid #2563eb;
+            font-size: 0.8rem;
+            color: #2d3748;
+            font-weight: 600;
+            text-align: right;
+            background: #f7fafc;
+            margin: 0 -12px -8px -12px;
+            padding: 8px 12px;
+            border-radius: 0 0 6px 6px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .loading, .no-orders {
+            text-align: center;
+            color: #718096;
+            font-size: 0.9rem;
+            padding: 20px 0;
+            font-weight: 400;
+        }
+
+        .refresh-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #2d3748;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+            font-weight: 400;
+        }
+        .refresh-indicator.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 1200px) {
+            .header-title { font-size: 1.4rem; }
+            .datetime { font-size: 0.9rem; }
+            .route-name { font-size: 1rem; }
+            .order-card { padding: 12px; }
+            .customer-name { font-size: 0.9rem; }
+            .item-details { font-size: 0.8rem; }
+            .order-total { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="refresh-indicator" id="refreshIndicator">🔄 Updating...</div>
+    
+    <div class="container">
+        <div class="parent">
+            <div class="div1">
+                <div style="display: flex; align-items: center; width: 100%;">
+                    <img src="logo/Mill Story logo.png" alt="Mill Story Logo" style="height: 56px; width: 56px; border-radius: 10px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); object-fit: contain;" />
+                    <div class="header-info">
+                        <div class="header-title">MFlow: Dispatching</div>
+                        
+                        <div id="headerStats"></div>
+                    </div>
+                    <div class="datetime" id="datetime"></div>
+                </div>
+            </div>
+            <div class="routes-container">
+                <!-- Route columns will be populated here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const supabaseUrl = 'https://sipnmwhfzdtqoqszgkmo.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let orders = [];
+        let refreshTimeout;
+        let lastDataHTML = '';
+        let ordersSubscription = null;
+
+        // Soft refresh every 2 seconds (updates data without page reload)
+        setInterval(() => {
+            loadOrders({background: true});
+        }, 2000);
+
+        // Supabase Realtime subscription for immediate updates
+        async function subscribeRealtime() {
+            if (ordersSubscription) {
+                await supabase.removeChannel(ordersSubscription);
+            }
+            const today = new Date().toISOString().split("T")[0];
+            ordersSubscription = supabase
+                .channel('orders_overall_copy-changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'orders_overall_copy',
+                        filter: `planned_delivery=eq.${today}`
+                    },
+                    (payload) => {
+                        loadOrders();
+                    }
+                )
+                .subscribe();
+        }
+
+        // Initialize dashboard
+        async function initDashboard() {
+            try {
+                // Wait for Supabase to load
+                let attempts = 0;
+                while (!window.supabase && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                }
+                
+                if (!window.supabase) {
+                    throw new Error('Supabase failed to load after 5 seconds');
+                }
+                
+                console.log('Supabase loaded successfully');
+                startDateTime();
+                await loadOrders();
+                subscribeRealtime();
+            } catch (error) {
+                console.error('Dashboard initialization error:', error);
+                document.getElementById('route1').innerHTML = 
+                    `<div class="no-orders">
+                        <div style="margin-bottom: 10px; font-weight: 600;">Failed to initialize dashboard:</div>
+                        <div style="font-size: 0.9rem; color: #ef4444;">${error.message}</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem;">Please refresh the page.</div>
+                    </div>`;
+            }
+        }
+
+        // Start live date/time
+        function startDateTime() {
+            function updateDateTime() {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                const timeStr = now.toLocaleTimeString('en-US', { 
+                    hour12: true, 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                });
+                document.getElementById('datetime').textContent = `${dateStr} | ${timeStr}`;
+            }
+            
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+        }
+
+        // Load orders from Supabase
+        async function loadOrders(options = {}) {
+            try {
+                console.log('Attempting to load orders...');
+                
+                // Check if Supabase is loaded
+                if (!window.supabase) {
+                    throw new Error('Supabase library not loaded');
+                }
+                
+                // Get today's date in YYYY-MM-DD format
+                const today = new Date().toISOString().split('T')[0];
+                console.log('Filtering for today\'s date:', today);
+                
+                const { data, error } = await supabase
+                    .from('orders_overall_copy')
+                    .select('*')
+                    .eq('planned_delivery', today)
+                    .neq('delivery_status', 'cancelled')
+                    .order('route', { ascending: true });
+
+                console.log('Supabase response:', { data, error });
+
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw error;
+                }
+
+                console.log('Orders loaded for today:', data?.length || 0);
+                
+                // Debug: Log the first order to see available fields
+                if (data && data.length > 0) {
+                    console.log('Sample order fields:', Object.keys(data[0]));
+                    console.log('Sample order data:', data[0]);
+                }
+                
+                orders = data || [];
+                
+                // Update header stats immediately
+                const stats = calculateOrderStats();
+                updateHeaderStats(stats);
+                
+                // Only update DOM if changed (prevents flicker)
+                if (options.background) {
+                    const newHTML = generateDashboardHTML();
+                    if (newHTML !== lastDataHTML) {
+                        updateDashboardDOM(newHTML);
+                        lastDataHTML = newHTML;
+                    }
+                } else {
+                    const newHTML = generateDashboardHTML();
+                    updateDashboardDOM(newHTML);
+                    lastDataHTML = newHTML;
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                const errorMessage = error.message || 'Unknown error occurred';
+                document.getElementById('route1').innerHTML = 
+                    `<div class="no-orders">
+                        <div style="margin-bottom: 10px; font-weight: 600;">Error loading orders:</div>
+                        <div style="font-size: 0.9rem; color: #ef4444;">${errorMessage}</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem;">Please check console for details and refresh the page.</div>
+                    </div>`;
+            }
+        }
+
+        // Setup real-time subscription
+        function setupRealtimeSubscription() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            supabase
+                .channel('orders_changes')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'orders_overall_copy' },
+                    (payload) => {
+                        console.log('Real-time update:', payload);
+                        
+                        // Only refresh if the updated record is for today
+                        if (payload.new && payload.new.planned_delivery === today) {
+                            showRefreshIndicator();
+                            loadOrders();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        // Show refresh indicator
+        function showRefreshIndicator() {
+            const indicator = document.getElementById('refreshIndicator');
+            indicator.classList.add('show');
+            
+            clearTimeout(refreshTimeout);
+            refreshTimeout = setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Calculate order statistics
+        function calculateOrderStats() {
+            if (!orders.length) {
+                return {
+                    total: 0,
+                    packed: 0,
+                    loaded: 0,
+                    delivered: 0,
+                    assigned: 0
+                };
+            }
+
+            // Group orders by shopify_name to count unique customers
+            const customerGroups = {};
+            orders.forEach(order => {
+                const shopifyName = order.shopify_name || 'Unknown';
+                if (!customerGroups[shopifyName]) {
+                    customerGroups[shopifyName] = [];
+                }
+                customerGroups[shopifyName].push(order);
+            });
+
+            const stats = {
+                total: Object.keys(customerGroups).length, // Count unique customers
+                packed: 0,
+                loaded: 0,
+                delivered: 0,
+                assigned: 0
+            };
+
+            // Check status for each customer group
+            Object.values(customerGroups).forEach(customerOrders => {
+                // A customer is considered packed if ALL their orders are packed
+                const allPacked = customerOrders.every(order => order.packing_status === 'packed');
+                if (allPacked) stats.packed++;
+
+                // A customer is considered loaded if ALL their orders are loaded
+                const allLoaded = customerOrders.every(order => order.loading_status === 'loaded');
+                if (allLoaded) stats.loaded++;
+
+                // A customer is considered delivered if ALL their orders are delivered
+                const allDelivered = customerOrders.every(order => order.delivery_status === 'delivered');
+                if (allDelivered) stats.delivered++;
+
+                // A customer is considered assigned if ANY of their orders have a route assigned
+                const hasRoute = customerOrders.some(order => order.route && order.route.trim() !== '');
+                if (hasRoute) stats.assigned++;
+            });
+
+            return stats;
+        }
+
+        // Sort orders function - same logic as React version
+        function sortOrders(orders) {
+            return [...orders].sort((a, b) => {
+                if (a.delivery_status === 'delivered' && b.delivery_status !== 'delivered') return -1;
+                if (b.delivery_status !== 'delivered' && a.delivery_status === 'delivered') return 1;
+                return 0;
+            });
+        }
+
+        // Generate dashboard HTML without updating DOM
+        function generateDashboardHTML() {
+            if (!orders.length) {
+                return '<div class="no-orders">No orders found</div>';
+            }
+
+            // Group orders by route
+            const routes = {};
+            orders.forEach(order => {
+                const routeName = order.route;
+                if (routeName && routeName.trim() !== '') {
+                    if (!routes[routeName]) {
+                        routes[routeName] = [];
+                    }
+                    routes[routeName].push(order);
+                }
+            });
+
+            // Get route names and sort them by route number
+            const routeNames = Object.keys(routes).sort((a, b) => {
+                const aNum = parseInt(a.replace('r', ''));
+                const bNum = parseInt(b.replace('r', ''));
+                return aNum - bNum;
+            });
+            
+            // Generate HTML for all routes
+            let routesHTML = '';
+            routeNames.forEach((routeName, index) => {
+                const routeOrders = routes[routeName];
+                
+                // Group orders by shopify_name within each route
+                const groupedOrders = {};
+                routeOrders.forEach(order => {
+                    const shopifyName = order.shopify_name || 'Unknown';
+                    if (!groupedOrders[shopifyName]) {
+                        groupedOrders[shopifyName] = [];
+                    }
+                    groupedOrders[shopifyName].push(order);
+                });
+
+                // Convert grouped orders to array and apply sorting
+                const orderGroups = Object.entries(groupedOrders).map(([shopifyName, customerOrders]) => ({
+                    shopifyName,
+                    customerOrders
+                }));
+
+                // Sort order groups based on delivery status
+                const sortedOrderGroups = orderGroups.sort((a, b) => {
+                    const allDeliveredA = a.customerOrders.every(order => order.delivery_status === 'delivered');
+                    const allDeliveredB = b.customerOrders.every(order => order.delivery_status === 'delivered');
+                    
+                    if (allDeliveredA && !allDeliveredB) return -1;
+                    if (allDeliveredB && !allDeliveredA) return 1;
+                    return 0;
+                });
+
+                // Find the first non-empty assigned_to value in the route
+                let assignedTo = '';
+                for (let i = 0; i < routeOrders.length; i++) {
+                    if (routeOrders[i].assigned_to && routeOrders[i].assigned_to.trim() !== '') {
+                        assignedTo = routeOrders[i].assigned_to;
+                        break;
+                    }
+                }
+
+                const routeHTML = `
+                    <div class="route-column">
+                        <div class="route-header">
+                            <div class="route-name">
+                                <span class="route-icon">🚛</span>
+                                ${routeName}${assignedTo ? ' - ' + assignedTo : ''}
+                            </div>
+                            <div class="order-count">${sortedOrderGroups.length} orders</div>
+                        </div>
+                        <div class="orders-list">
+                            ${sortedOrderGroups.map(group => 
+                                renderOrderCard(group.shopifyName, group.customerOrders)
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                routesHTML += routeHTML;
+            });
+            
+            return routesHTML;
+        }
+
+        // Update dashboard DOM with new HTML
+        function updateDashboardDOM(html) {
+            const routesContainer = document.querySelector('.routes-container');
+            if (routesContainer) {
+                routesContainer.innerHTML = html;
+            }
+        }
+
+        // Update header statistics
+        function updateHeaderStats(stats) {
+            const statsHTML = `
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Orders:</span>
+                        <span class="stat-value">${stats.total}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Assigned Orders:</span>
+                        <span class="stat-value">${stats.assigned}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Packed:</span>
+                        <span class="stat-value">${stats.packed}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Loaded:</span>
+                        <span class="stat-value">${stats.loaded}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Delivered Orders:</span>
+                        <span class="stat-value">${stats.delivered}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Update the header stats section
+            const headerStats = document.getElementById('headerStats');
+            if (headerStats) {
+                headerStats.innerHTML = statsHTML;
+            }
+        }
+
+        // Render individual order card with multiple items
+        function renderOrderCard(shopifyName, orders) {
+            // Check if all orders are packed
+            const allPacked = orders.every(order => order.packing_status === 'packed');
+            // Check if all orders are loaded
+            const allLoaded = orders.every(order => order.loading_status === 'loaded');
+            
+            // Calculate total quantities and weights
+            let totalQuantity = 0;
+            let totalWeightKg = 0;
+            const items = [];
+
+            orders.forEach(order => {
+                const quantity = Number(order.quantity) || 0;
+                const weight = parseFloat(order.weight) || 0;
+                const unit = order.unit || '';
+                const itemName = order.item_name || '';
+                const fineness = order.fineness || '';
+                
+                totalQuantity += quantity;
+                
+                // Convert all weights to kg for consistent calculation
+                let itemWeightKg = 0;
+                if (unit.toLowerCase().includes('kg')) {
+                    itemWeightKg = weight * quantity;
+                } else if (unit.toLowerCase().includes('g')) {
+                    itemWeightKg = (weight * quantity) / 1000;
+                } else {
+                    itemWeightKg = weight * quantity; // Assume kg if unit is unclear
+                }
+                
+                totalWeightKg += itemWeightKg;
+                
+                items.push({
+                    name: itemName,
+                    fineness: fineness,
+                    quantity: quantity,
+                    weight: weight,
+                    unit: unit,
+                    totalWeightKg: itemWeightKg
+                });
+            });
+
+            // Format total weight
+            let totalWeightStr = '';
+            if (totalWeightKg >= 1) {
+                totalWeightStr = `${totalWeightKg.toFixed(1)} kg`;
+            } else {
+                totalWeightStr = `${(totalWeightKg * 1000).toFixed(0)} g`;
+            }
+
+            // Generate items list HTML
+            const itemsHTML = items.map(item => {
+                let itemWeightStr = '';
+                if (item.totalWeightKg >= 1) {
+                    itemWeightStr = `${item.totalWeightKg.toFixed(1)} kg`;
+                } else {
+                    itemWeightStr = `${(item.totalWeightKg * 1000).toFixed(0)} g`;
+                }
+
+                return `
+                    <div class="item-row">
+                        <div class="item-details" style="font-weight: 600;">
+                            ${item.name ? `<span>${item.name}</span>` : ''}
+                            ${item.fineness ? `<span> - ${item.fineness}</span>` : ''}
+                            ${item.quantity ? `<span> x${item.quantity}</span>` : ''}
+                        </div>
+                        <div class="item-meta" style="font-weight: 600;">
+                            ${itemWeightStr}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const isAllDelivered = orders.every(order => order.delivery_status === 'delivered');
+
+            return `
+                <div class="order-card${isAllDelivered ? ' delivered' : ''}">
+                    <div class="customer-header">
+                        <div class="customer-name">${shopifyName}</div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                            <div class="status-chip${allPacked ? ' packed' : ''}">
+                                <span class="material-icons" style="font-size: 16px;">
+                                    ${allPacked ? 'check_circle' : 'pending'}
+                                </span>
+                                ${allPacked ? 'packed' : 'unpacked'}
+                            </div>
+                            <div class="status-chip${allLoaded ? ' loaded' : ''}" style="background: ${allLoaded ? '#dbeafe' : '#fef3c7'}; color: ${allLoaded ? '#1e40af' : '#d97706'};">
+                                <span class="material-icons" style="font-size: 16px;">
+                                    ${allLoaded ? 'local_shipping' : 'schedule'}
+                                </span>
+                                ${allLoaded ? 'loaded' : 'not loaded'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="items-list">
+                        ${itemsHTML}
+                    </div>
+                    <div class="order-total">
+                        Total: ${totalWeightStr} (${totalQuantity} items)
+                    </div>
+                </div>
+            `;
+        }
+
+        // Store scroll positions before refresh
+        function storeScrollPositions() {
+            const routeColumns = document.querySelectorAll('.route-column');
+            const scrollPositions = {};
+            
+            routeColumns.forEach((column, index) => {
+                scrollPositions[`route-${index}`] = column.scrollTop;
+            });
+            
+            return scrollPositions;
+        }
+
+        // Restore scroll positions after refresh
+        function restoreScrollPositions(scrollPositions) {
+            const routeColumns = document.querySelectorAll('.route-column');
+            
+            routeColumns.forEach((column, index) => {
+                const savedPosition = scrollPositions[`route-${index}`];
+                if (savedPosition !== undefined) {
+                    column.scrollTop = savedPosition;
+                }
+            });
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html> 

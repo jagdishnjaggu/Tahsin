@@ -1,0 +1,412 @@
+<div class="page-width">
+  <div class="section">
+    <h1 class="h1">❄️ Cold Atta Mill – Live Monitor</h1>
+
+    <!-- Mill Machine Status -->
+    <section class="trust-section">
+      <h2 class="trust-subheading">Mill Speed & Temperature</h2>
+      <div class="trust-machines">
+        <div class="trust-circle">
+          <div class="rpm-spinner" id="m1r1-indicator">
+            <div class="rpm-dot"></div>
+          </div>
+          <div class="circle-label">Machine 1</div>
+          <div class="circle-value" id="m1t1">--</div>
+          <div class="circle-value" id="m1r1">--</div>
+          <div class="cold-label">Cold Mill</div>
+        </div>
+        <div class="trust-circle">
+          <div class="rpm-spinner" id="m1r2-indicator">
+            <div class="rpm-dot"></div>
+          </div>
+          <div class="circle-label">Machine 2</div>
+          <div class="circle-value" id="m1t2">--</div>
+          <div class="circle-value" id="m1r2">--</div>
+          <div class="cold-label">Cold Mill</div>
+        </div>
+        <div class="trust-circle">
+          <div class="rpm-spinner" id="m2r1-indicator">
+            <div class="rpm-dot"></div>
+          </div>
+          <div class="circle-label">Machine 3</div>
+          <div class="circle-value" id="m2t1">--</div>
+          <div class="circle-value" id="m2r1">--</div>
+          <div class="cold-label">Cold Mill</div>
+        </div>
+        <div class="trust-circle">
+          <div class="rpm-spinner" id="m2r2-indicator">
+            <div class="rpm-dot"></div>
+          </div>
+          <div class="circle-label">Machine 4</div>
+          <div class="circle-value" id="m2t2">--</div>
+          <div class="circle-value" id="m2r2">--</div>
+          <div class="cold-label">Cold Mill</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Grain Storage Section -->
+    <section class="trust-section">
+      <h2 class="trust-subheading">Grain Storage – Temperature & Humidity</h2>
+      <div class="trust-graphs">
+        <div class="trust-card">
+          <canvas id="temperatureChart"></canvas>
+          <div id="currentTemp" class="trust-current-value">--<span class="unit">°C</span></div>
+        </div>
+        <div class="trust-card">
+          <canvas id="humidityChart"></canvas>
+          <div id="currentHumidity" class="trust-current-value">--<span class="unit">%</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Camera Feed -->
+    <section class="trust-section">
+      <h2 class="trust-subheading">Live Camera Feed</h2>
+      <div class="trust-video">
+        <video id="cam1" controls autoplay muted></video>
+        <div class="trust-video-controls">
+          <button id="cam1Pause">Pause</button>
+          <button id="cam1Quality">HD</button>
+          <button id="cam1Fullscreen">Fullscreen</button>
+        </div>
+        <div id="cam1Status" class="trust-stream-status">Stream Active</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<style>
+  body, .h1, .trust-subheading, .circle-label, .circle-value, .cold-label, .trust-current-value, .trust-video-controls button, .trust-stream-status {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+  .h1 {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #1a237e;
+  }
+
+  .trust-subheading {
+    color: #1a237e;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 2rem 0 1rem;
+    letter-spacing: 0.5px;
+    font-size: 1.8rem;
+    text-align: center;
+  }
+
+  .trust-circle {
+  font-size: 1.25rem; /* base size for all text inside the circle */
+}
+
+.circle-label {
+  font-size: 1.5rem;  /* Machine 1/2/3/4 */
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.circle-value {
+  font-size: 1.4rem;  /* Temp & RPM */
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+.cold-label {
+  font-size: 1.2rem;  /* Cold Mill */
+  font-weight: 600;
+  margin-top: 10px;
+  color: #0091ea;
+}
+
+
+  .trust-graphs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .trust-card {
+    flex: 1 1 300px;
+    padding: 1.2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    min-height: 320px;
+    position: relative;
+  }
+
+  .trust-current-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a237e;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+  }
+
+  .unit {
+    font-size: 0.8rem;
+    margin-left: 4px;
+  }
+
+  .trust-video {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 3rem;
+  }
+
+  .trust-video video {
+    width: 720px;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+    display: block;
+  }
+
+  .trust-video-controls {
+    margin-top: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .trust-video-controls button {
+    background: #b71c1c;
+    color: white;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    transition: background 0.3s ease;
+  }
+
+  .trust-video-controls button:hover {
+    background: #880e4f;
+  }
+
+  .trust-stream-status {
+    font-size: 0.9rem;
+    color: #0091ea;
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  .trust-machines {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  .trust-circle {
+    width: 240px;
+    height: 240px;
+    background: #e3f2fd;
+    border-radius: 50%;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    position: relative;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .trust-circle {
+    position: relative !important;  /* Ensure relative positioning */
+    overflow: visible !important;   /* Allow dot to be visible */
+  }
+
+  .rpm-spinner {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform-origin: center center !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+  }
+
+  .rpm-dot {
+    position: absolute !important;
+    top: 10px !important;
+    left: 50% !important;
+    width: 12px !important;
+    height: 12px !important;
+    background: #ff5252 !important;
+    border-radius: 50% !important;
+    transform: translateX(-50%) !important;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.5) !important;
+  }
+
+  .rpm-active {
+    animation: millRotateCircle 1.2s linear infinite !important;
+  }
+
+  @keyframes millRotateCircle {
+    from { transform: rotate(0deg) !important; }
+    to   { transform: rotate(360deg) !important; }
+  }
+
+
+  @media (max-width: 768px) {
+    .trust-graphs {
+      flex-direction: column;
+    }
+
+    .trust-machines {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+
+  .section {
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+  }
+</style>
+
+<!-- JS is unchanged -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+  const rpmTempUrl1 = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp_2.json";
+  const rpmTempUrl2 = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/rpm_temp_1.json";
+  const storageUrl = "https://mill-live-voltage-default-rtdb.asia-southeast1.firebasedatabase.app/dht_avg.json";
+
+  function updateCircleColor(temp, circleElement) {
+  let color;
+  if (temp <= 39) {
+    color = "linear-gradient(135deg, #e3f2fd, #bbdefb)";
+  } else if (temp <= 50) {
+    color = "linear-gradient(135deg, #fff3e0, #ffe0b2)";
+  } else {
+    color = "linear-gradient(135deg, #ffcdd2, #ef9a9a)";
+  }
+  circleElement.style.background = color;
+}
+
+
+ function updateMachineData(url, ids) {
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const t1 = parseFloat(data.temp1 || 0);
+      const t2 = parseFloat(data.temp2 || 0);
+      const rpm1Value = parseFloat(data.rpm1 || 0);
+      const rpm2Value = parseFloat(data.rpm2 || 0);
+
+      // Update text
+      document.getElementById(ids.temp1).innerText = `Temp: ${t1.toFixed(1)} °C`;
+      document.getElementById(ids.rpm1).innerText = `RPM: ${rpm1Value.toFixed(0)}`;
+      document.getElementById(ids.temp2).innerText = `Temp: ${t2.toFixed(1)} °C`;
+      document.getElementById(ids.rpm2).innerText = `RPM: ${rpm2Value.toFixed(0)}`;
+
+      // Get circle elements
+      const circle1 = document.getElementById(ids.temp1).closest('.trust-circle');
+      const circle2 = document.getElementById(ids.temp2).closest('.trust-circle');
+
+      // Get spinner elements
+      const spinner1 = document.getElementById(`${ids.rpm1}-indicator`);
+      const spinner2 = document.getElementById(`${ids.rpm2}-indicator`);
+
+      // Control spinner rotation based on RPM
+      if (spinner1) {
+        spinner1.classList.toggle("rpm-active", rpm1Value > 0);
+      }
+      if (spinner2) {
+        spinner2.classList.toggle("rpm-active", rpm2Value > 0);
+      }
+
+      // Update circle colors based on temp
+      updateCircleColor(t1, circle1);
+      updateCircleColor(t2, circle2);
+    });
+}
+
+  function updateStorageData() {
+    fetch(storageUrl)
+      .then(res => res.json())
+      .then(data => {
+        const now = new Date();
+        const temperature = parseFloat(data.temperature || 0).toFixed(1);
+        const humidity = parseFloat(data.humidity || 0).toFixed(1);
+        document.getElementById("currentTemp").innerHTML = `${temperature}<span class="unit">°C</span>`;
+        document.getElementById("currentHumidity").innerHTML = `${humidity}<span class="unit">%</span>`;
+        const timeStr = now.toLocaleTimeString();
+        tempData.push(temperature);
+        humidData.push(humidity);
+        timeLabels.push(timeStr);
+        if (tempData.length > 20) {
+          tempData.shift(); humidData.shift(); timeLabels.shift();
+        }
+        tempChart.update('none'); humidChart.update('none');
+      });
+  }
+
+  function setupPlayer(videoId, streamUrl) {
+    const video = document.getElementById(videoId);
+    if (Hls.isSupported()) {
+      const hls = new Hls(); hls.loadSource(streamUrl); hls.attachMedia(video);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = streamUrl;
+    }
+  }
+
+  function setupVideoControls(videoId) {
+    const video = document.getElementById(videoId);
+    document.getElementById(`${videoId}Pause`).onclick = () => {
+      video.paused ? video.play() : video.pause();
+    };
+    document.getElementById(`${videoId}Fullscreen`).onclick = () => {
+      video.requestFullscreen();
+    };
+  }
+
+  const tempData = Array(20).fill(null);
+  const humidData = Array(20).fill(null);
+  const timeLabels = Array(20).fill('');
+
+  const tempChart = new Chart(document.getElementById('temperatureChart'), {
+    type: 'line', data: {
+      labels: timeLabels, datasets: [{
+        label: 'Temperature (°C)', data: tempData, borderColor: '#FF6384',
+        backgroundColor: 'rgba(255, 99, 132, 0.1)', borderWidth: 2, fill: true, tension: 0.4
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  const humidChart = new Chart(document.getElementById('humidityChart'), {
+    type: 'line', data: {
+      labels: timeLabels, datasets: [{
+        label: 'Humidity (%)', data: humidData, borderColor: '#36A2EB',
+        backgroundColor: 'rgba(54, 162, 235, 0.1)', borderWidth: 2, fill: true, tension: 0.4
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  function updateAll() {
+    updateStorageData();
+    updateMachineData(rpmTempUrl1, { temp1: "m1t1", rpm1: "m1r1", temp2: "m1t2", rpm2: "m1r2" });
+    updateMachineData(rpmTempUrl2, { temp1: "m2t1", rpm1: "m2r1", temp2: "m2t2", rpm2: "m2r2" });
+  }
+
+  setupPlayer("cam1", "https://cam1.millstory.in/cam2/cam2.m3u8");
+  setupVideoControls("cam1");
+  setInterval(updateAll, 5000);
+  updateAll();
+</script>

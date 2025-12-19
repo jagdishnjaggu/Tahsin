@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mill Operator Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f5f7fa;
+        min-height: 100vh;
+      }
+
+      /* Header - Webapp style */
+      .header {
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .logo-section {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .logo-section img {
+        height: 36px;
+        width: 36px;
+        border-radius: 8px;
+        background: white;
+        padding: 2px;
+      }
+      .logo-section h1 {
+        font-size: 1rem;
+        margin: 0;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      /* Create Job Button */
+      .create-btn {
+        background: rgba(255,255,255,0.15);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 0.5rem 0.9rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s;
+      }
+      .create-btn:hover {
+        background: rgba(255,255,255,0.25);
+      }
+      .create-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* Main Content */
+      .main {
+        padding: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      /* Section Title */
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+      }
+      .refresh-btn {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        color: #555;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        transition: all 0.2s;
+      }
+      .refresh-btn:hover {
+        background: #f5f5f5;
+        border-color: #ccc;
+      }
+
+      /* Job Cards - Strong UI */
+      .job-card {
+        background: #fff;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+        border: 1px solid #e8e8e8;
+      }
+      .job-card-header {
+        padding: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .job-grain {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0 0 0.3rem 0;
+      }
+      .job-qty {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1976d2;
+      }
+      .job-status {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .status-pending {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status-milling {
+        background: #cce5ff;
+        color: #004085;
+      }
+      .status-done {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .job-card-body {
+        padding: 1rem;
+        background: #fafbfc;
+      }
+      .job-ids {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+      }
+      .job-id-chip {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: #e9ecef;
+        color: #495057;
+        font-family: 'Monaco', 'Consolas', monospace;
+      }
+      .job-id-chip.out {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .job-id-chip.mill {
+        background: #cce5ff;
+        color: #004085;
+      }
+      .job-id-chip.src {
+        background: #e2e3e5;
+        color: #383d41;
+      }
+
+      .job-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #555;
+      }
+      .job-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .job-meta-item svg {
+        width: 16px;
+        height: 16px;
+        color: #888;
+      }
+
+      /* Milling Info */
+      .milling-info {
+        background: #e3f2fd;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-top: 0.75rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+      }
+      .milling-info-item {
+        color: #1565c0;
+      }
+      .milling-info-item strong {
+        color: #0d47a1;
+      }
+
+      /* Job Actions */
+      .job-card-footer {
+        padding: 0.75rem 1rem;
+        background: #fff;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .action-btn {
+        padding: 0.5rem 0.75rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        transition: all 0.2s;
+      }
+      .action-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+      .btn-start {
+        background: #10b981;
+        color: white;
+        flex: 1;
+      }
+      .btn-start:hover {
+        background: #059669;
+      }
+      .btn-end {
+        background: #ef4444;
+        color: white;
+        flex: 1;
+      }
+      .btn-end:hover {
+        background: #dc2626;
+      }
+      .btn-qr {
+        background: #fff;
+        color: #333;
+        border: 1px solid #ddd;
+      }
+      .btn-qr:hover {
+        background: #f5f5f5;
+        border-color: #ccc;
+      }
+      .btn-edit {
+        background: #fff;
+        color: #1976d2;
+        border: 1px solid #1976d2;
+      }
+      .btn-edit:hover {
+        background: #e3f2fd;
+      }
+      .btn-delete {
+        background: #fff;
+        color: #dc2626;
+        border: 1px solid #dc2626;
+      }
+      .btn-delete:hover {
+        background: #fef2f2;
+      }
+
+      /* Modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .modal-overlay.active {
+        display: flex;
+      }
+      .modal {
+        background: #fff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 420px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      }
+      .modal-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        border-radius: 16px 16px 0 0;
+      }
+      .modal-header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #fff;
+        font-weight: 600;
+      }
+      .modal-close {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        color: #fff;
+        padding: 0.2rem 0.5rem;
+        line-height: 1;
+        border-radius: 6px;
+      }
+      .modal-close:hover {
+        background: rgba(255,255,255,0.3);
+      }
+      .modal-body {
+        padding: 1.25rem;
+      }
+
+      /* QR Scanner */
+      #qr-reader {
+        width: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+        border: 2px solid #e0e0e0;
+      }
+
+      /* Scanned Info */
+      .scanned-info {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        border: 1px solid #81c784;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      .scanned-info h3 {
+        margin: 0 0 0.5rem 0;
+        color: #2e7d32;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .scanned-info p {
+        margin: 0.3rem 0;
+        font-size: 0.9rem;
+        color: #333;
+      }
+
+      /* Form */
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: #333;
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        font-size: 1rem;
+        background: #fff;
+        transition: all 0.2s;
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #1976d2;
+        box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+      }
+
+      /* Custom Input Container */
+      .dropdown-with-custom {
+        position: relative;
+      }
+      .custom-input-row {
+        display: none;
+        margin-top: 0.5rem;
+      }
+      .custom-input-row.active {
+        display: block;
+      }
+      .custom-input-row input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #1976d2;
+        border-radius: 10px;
+        font-size: 1rem;
+        background: #e3f2fd;
+      }
+
+      .submit-btn {
+        width: 100%;
+        padding: 0.9rem;
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .submit-btn:hover {
+        background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+      }
+      .submit-btn:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #888;
+        background: #fff;
+        border-radius: 12px;
+        border: 2px dashed #e0e0e0;
+      }
+      .empty-state svg {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 1rem;
+        color: #ccc;
+      }
+      .empty-state p {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      /* QR Modal */
+      .qr-display {
+        text-align: center;
+        padding: 1rem;
+      }
+      .qr-display img {
+        width: 180px;
+        height: 180px;
+        border: 3px solid #1976d2;
+        border-radius: 12px;
+        padding: 8px;
+        background: #fff;
+      }
+      .qr-details {
+        margin-top: 1rem;
+        text-align: left;
+        background: #f5f5f5;
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+      }
+      .qr-details p {
+        margin: 0.3rem 0;
+      }
+      .print-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: #333;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 1rem;
+      }
+
+      @media print {
+        body * { visibility: hidden; }
+        .qr-print-area, .qr-print-area * { visibility: visible; }
+        .qr-print-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-section">
+        <img src="logo/Mill Story logo.png" alt="Logo" />
+        <h1>Mill Operator</h1>
+      </div>
+      <button class="create-btn" onclick="openCreateModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <rect x="9" y="9" width="6" height="6"/>
+        </svg>
+        Scan QR
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+      <div class="section-header">
+        <h2 class="section-title">Milling Jobs</h2>
+        <button class="refresh-btn" onclick="fetchJobs()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+            <path d="M23 4v6h-6M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Jobs List -->
+      <div id="jobs-container">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12" y2="16.01"/>
+          </svg>
+          <p>Loading jobs...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Job Modal -->
+    <div class="modal-overlay" id="create-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>📦 Create Milling Job</h2>
+          <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="qr-reader"></div>
+
+          <div class="scanned-info" id="scanned-info" style="display: none;">
+            <h3>✓ QR Scanned Successfully</h3>
+            <p><strong>Source Event:</strong> #<span id="scanned-event"></span></p>
+            <p><strong>Grain:</strong> <span id="scanned-grain"></span></p>
+            <p><strong>Bag:</strong> <span id="scanned-bag"></span></p>
+          </div>
+
+          <div class="form-group">
+            <label>Quantity to Mill (Kg)</label>
+            <input type="number" id="input-qty" placeholder="Enter quantity" step="0.01" min="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Grain Out By</label>
+            <div class="dropdown-with-custom">
+              <select id="input-out-by" onchange="handleDropdownChange('input-out-by', 'custom-out-by')">
+                <option value="">-- Select Person --</option>
+              </select>
+              <div class="custom-input-row" id="custom-out-by-row">
+                <input type="text" id="custom-out-by" placeholder="Enter custom name" />
+              </div>
+            </div>
+          </div>
+
+          <button class="submit-btn" id="create-job-btn" onclick="createJob()" disabled>
+            Create Milling Job
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Milling Modal -->
+    <div class="modal-overlay" id="start-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>▶️ Start Milling</h2>
+          <button class="modal-close" onclick="closeStartModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="scanned-info">
+            <h3 id="start-grain-name">Wheat</h3>
+            <p><strong>Quantity:</strong> <span id="start-qty">50</span> Kg</p>
+            <p><strong>Out Event:</strong> OUT-<span id="start-out-id">2001</span></p>
+          </div>
+
+          <div class="form-group">
+            <label>Machine Number</label>
+            <div class="dropdown-with-custom">
+              <select id="input-machine" onchange="handleDropdownChange('input-machine', 'custom-machine')">
+                <option value="">-- Select Machine --</option>
+              </select>
+              <div class="custom-input-row" id="custom-machine-row">
+                <input type="text" id="custom-machine" placeholder="Enter custom machine" />
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Milled By</label>
+            <div class="dropdown-with-custom">
+              <select id="input-milled-by" onchange="handleDropdownChange('input-milled-by', 'custom-milled-by')">
+                <option value="">-- Select Miller --</option>
+              </select>
+              <div class="custom-input-row" id="custom-milled-by-row">
+                <input type="text" id="custom-milled-by" placeholder="Enter custom name" />
+              </div>
+            </div>
+          </div>
+
+          <button class="submit-btn" onclick="startMilling()">
+            ▶️ Start Milling
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Job Modal -->
+    <div class="modal-overlay" id="edit-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>✏️ Edit Job</h2>
+          <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Grain Name</label>
+            <input type="text" id="edit-grain" readonly style="background: #f5f5f5;" />
+          </div>
+          <div class="form-group">
+            <label>Quantity (Kg)</label>
+            <input type="number" id="edit-qty" step="0.01" min="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Out By</label>
+            <div class="dropdown-with-custom">
+              <select id="edit-out-by" onchange="handleDropdownChange('edit-out-by', 'custom-edit-out-by')">
+                <option value="">-- Select Person --</option>
+              </select>
+              <div class="custom-input-row" id="custom-edit-out-by-row">
+                <input type="text" id="custom-edit-out-by" placeholder="Enter custom name" />
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Machine Number</label>
+            <div class="dropdown-with-custom">
+              <select id="edit-machine" onchange="handleDropdownChange('edit-machine', 'custom-edit-machine')">
+                <option value="">-- Select Machine --</option>
+              </select>
+              <div class="custom-input-row" id="custom-edit-machine-row">
+                <input type="text" id="custom-edit-machine" placeholder="Enter custom machine" />
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Milled By</label>
+            <div class="dropdown-with-custom">
+              <select id="edit-milled-by" onchange="handleDropdownChange('edit-milled-by', 'custom-edit-milled-by')">
+                <option value="">-- Select Miller --</option>
+              </select>
+              <div class="custom-input-row" id="custom-edit-milled-by-row">
+                <input type="text" id="custom-edit-milled-by" placeholder="Enter custom name" />
+              </div>
+            </div>
+          </div>
+
+          <button class="submit-btn" onclick="saveEditJob()">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div class="modal-overlay" id="qr-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>📱 Milling QR Code</h2>
+          <button class="modal-close" onclick="closeQRModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="qr-display qr-print-area" id="qr-print-area">
+            <img id="qr-image" src="" alt="QR Code" />
+            <div class="qr-details" id="qr-details"></div>
+          </div>
+          <button class="print-btn" onclick="printQR()">🖨️ Print QR Code</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Supabase setup
+      const supabase = window.supabase.createClient(
+        "https://sipnmwhfzdtqoqszgkmo.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcG5td2hmemR0cW9xc3pna21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjA4NzQsImV4cCI6MjA2NDY5Njg3NH0.0i9SvYgkgv6BtN2JjZwTJhnPsIkDPD-5BP6uvky6v9M"
+      );
+
+      // ID prefixes
+      const OUT_EVENT_START = 2000;
+      const MILLING_EVENT_START = 3000;
+
+      // State
+      let jobs = [];
+      let scannedData = null;
+      let html5QrCode = null;
+      let selectedJobId = null;
+      let editingJobId = null;
+
+      // Dropdown data
+      let workers = [];
+      let machines = [];
+
+      // Get IST date/time
+      function getISTDate() {
+        const now = new Date();
+        const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+        return ist.toISOString().split('T')[0];
+      }
+
+      function getISTTime() {
+        const now = new Date();
+        const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+        return ist.toISOString().split('T')[1].substring(0, 8);
+      }
+
+      function formatTime(time) {
+        if (!time) return '--';
+        const [h, m] = time.split(':');
+        const hour = parseInt(h);
+        const suffix = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${m} ${suffix}`;
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return '--';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      }
+
+      // Handle dropdown with custom option
+      function handleDropdownChange(selectId, customInputId) {
+        const select = document.getElementById(selectId);
+        const customRow = document.getElementById(customInputId + '-row');
+        const customInput = document.getElementById(customInputId);
+        
+        if (select.value === '__custom__') {
+          customRow.classList.add('active');
+          customInput.focus();
+        } else {
+          customRow.classList.remove('active');
+          customInput.value = '';
+        }
+        
+        validateCreateForm();
+      }
+
+      // Get value from dropdown or custom input
+      function getDropdownValue(selectId, customInputId) {
+        const select = document.getElementById(selectId);
+        const customInput = document.getElementById(customInputId);
+        
+        if (select.value === '__custom__') {
+          return customInput.value.trim();
+        }
+        return select.value;
+      }
+
+      // Fetch dropdown data
+      async function fetchDropdownData() {
+        const { data: workerData } = await supabase
+          .from('worker_list')
+          .select('*')
+          .order('worker_name', { ascending: true });
+        workers = workerData || [];
+
+        const { data: machineData } = await supabase
+          .from('machine_list')
+          .select('*')
+          .order('machine_no', { ascending: true });
+        machines = machineData || [];
+
+        populateDropdowns();
+      }
+
+      function populateDropdowns() {
+        // Helper to populate worker dropdowns
+        function populateWorkerDropdown(selectId) {
+          const select = document.getElementById(selectId);
+          select.innerHTML = '<option value="">-- Select Person --</option>';
+          workers.forEach(w => {
+            select.innerHTML += `<option value="${w.worker_name}">${w.worker_name}</option>`;
+          });
+          select.innerHTML += '<option value="__custom__">✏️ Enter Custom Name...</option>';
+        }
+
+        // Helper to populate machine dropdown
+        function populateMachineDropdown(selectId) {
+          const select = document.getElementById(selectId);
+          select.innerHTML = '<option value="">-- Select Machine --</option>';
+          machines.forEach(m => {
+            select.innerHTML += `<option value="${m.machine_no}">${m.machine_no}</option>`;
+          });
+          select.innerHTML += '<option value="__custom__">✏️ Enter Custom Machine...</option>';
+        }
+
+        // Create modal
+        populateWorkerDropdown('input-out-by');
+        
+        // Start modal
+        populateMachineDropdown('input-machine');
+        populateWorkerDropdown('input-milled-by');
+        
+        // Edit modal
+        populateWorkerDropdown('edit-out-by');
+        populateMachineDropdown('edit-machine');
+        populateWorkerDropdown('edit-milled-by');
+      }
+
+      async function fetchJobs() {
+        const { data, error } = await supabase
+          .from('grain_out_data')
+          .select('*')
+          .order('milling_id', { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.error('Error fetching jobs:', error);
+          return;
+        }
+
+        jobs = data || [];
+        renderJobs();
+      }
+
+      async function getNextOutEventId() {
+        const { data } = await supabase
+          .from('grain_out_data')
+          .select('out_event_id')
+          .order('out_event_id', { ascending: false })
+          .limit(1);
+
+        if (data && data.length > 0) {
+          return data[0].out_event_id + 1;
+        }
+        return OUT_EVENT_START + 1;
+      }
+
+      async function getNextMillingEventId() {
+        const { data } = await supabase
+          .from('grain_out_data')
+          .select('milling_event_id')
+          .order('milling_event_id', { ascending: false })
+          .limit(1);
+
+        if (data && data.length > 0) {
+          return data[0].milling_event_id + 1;
+        }
+        return MILLING_EVENT_START + 1;
+      }
+
+      function renderJobs() {
+        const container = document.getElementById('jobs-container');
+
+        if (jobs.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <rect x="9" y="9" width="6" height="6"/>
+              </svg>
+              <p>No jobs yet. Scan a QR code to create one.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = jobs.map(job => {
+          let statusClass = 'status-pending';
+          let statusText = 'Pending';
+          let primaryAction = '';
+
+          if (job.milling_end_time) {
+            statusClass = 'status-done';
+            statusText = 'Completed';
+          } else if (job.milling_start_time) {
+            statusClass = 'status-milling';
+            statusText = 'Milling';
+            primaryAction = `
+              <button class="action-btn btn-end" onclick="endMilling(${job.milling_id})">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                End Milling
+              </button>
+            `;
+          } else {
+            primaryAction = `
+              <button class="action-btn btn-start" onclick="openStartModal(${job.milling_id})">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><polygon points="5 3 19 12 5 21"/></svg>
+                Start Milling
+              </button>
+            `;
+          }
+
+          let millingInfo = '';
+          if (job.milling_start_time) {
+            millingInfo = `
+              <div class="milling-info">
+                <div class="milling-info-item"><strong>Machine:</strong> ${job.machine_no || '--'}</div>
+                <div class="milling-info-item"><strong>Miller:</strong> ${job.milled_by || '--'}</div>
+                <div class="milling-info-item"><strong>Started:</strong> ${formatTime(job.milling_start_time)}</div>
+                ${job.milling_end_time ? `<div class="milling-info-item"><strong>Ended:</strong> ${formatTime(job.milling_end_time)}</div>` : '<div class="milling-info-item"><strong>Status:</strong> In Progress</div>'}
+              </div>
+            `;
+          }
+
+          return `
+            <div class="job-card">
+              <div class="job-card-header">
+                <div>
+                  <h3 class="job-grain">${job.grain_name}</h3>
+                  <span class="job-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="job-qty">${parseFloat(job.quantity_kg).toFixed(1)} Kg</div>
+              </div>
+              <div class="job-card-body">
+                <div class="job-ids">
+                  <span class="job-id-chip out">OUT-${job.out_event_id}</span>
+                  <span class="job-id-chip mill">MILL-${job.milling_event_id}</span>
+                  <span class="job-id-chip src">SRC-${job.source_event_id}</span>
+                </div>
+                <div class="job-meta">
+                  <div class="job-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${formatDate(job.out_date)} ${formatTime(job.out_time)}
+                  </div>
+                  <div class="job-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    ${job.out_by}
+                  </div>
+                </div>
+                ${millingInfo}
+              </div>
+              <div class="job-card-footer">
+                ${primaryAction}
+                <button class="action-btn btn-qr" onclick="showQRCode(${job.milling_id})">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  QR
+                </button>
+                <button class="action-btn btn-edit" onclick="openEditModal(${job.milling_id})">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="action-btn btn-delete" onclick="deleteJob(${job.milling_id})">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Create Modal
+      function openCreateModal() {
+        document.getElementById('create-modal').classList.add('active');
+        scannedData = null;
+        document.getElementById('scanned-info').style.display = 'none';
+        document.getElementById('input-qty').value = '';
+        document.getElementById('input-out-by').value = '';
+        document.getElementById('custom-out-by').value = '';
+        document.getElementById('custom-out-by-row').classList.remove('active');
+        document.getElementById('create-job-btn').disabled = true;
+        startQRScanner();
+      }
+
+      function closeCreateModal() {
+        document.getElementById('create-modal').classList.remove('active');
+        stopQRScanner();
+      }
+
+      function startQRScanner() {
+        html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 200, height: 200 } },
+          onQRCodeScanned,
+          () => {}
+        ).catch(err => {
+          document.getElementById('qr-reader').innerHTML = `
+            <div style="padding: 2rem; text-align: center; background: #fef2f2; border-radius: 8px;">
+              <p style="color: #dc2626; margin: 0; font-weight: 600;">Camera access denied</p>
+              <p style="color: #666; font-size: 0.85rem; margin-top: 0.5rem;">Please allow camera access</p>
+            </div>
+          `;
+        });
+      }
+
+      function stopQRScanner() {
+        if (html5QrCode) {
+          html5QrCode.stop().catch(() => {});
+        }
+      }
+
+      function onQRCodeScanned(decodedText) {
+        try {
+          const data = JSON.parse(decodedText);
+          scannedData = {
+            eventId: data.e,
+            grainName: data.g,
+            bag: data.b,
+            qtyPerBag: data.q
+          };
+
+          document.getElementById('scanned-event').textContent = scannedData.eventId;
+          document.getElementById('scanned-grain').textContent = scannedData.grainName;
+          document.getElementById('scanned-bag').textContent = scannedData.bag;
+          document.getElementById('scanned-info').style.display = 'block';
+          document.getElementById('input-qty').value = scannedData.qtyPerBag;
+
+          stopQRScanner();
+          document.getElementById('qr-reader').innerHTML = `
+            <div style="padding: 1rem; text-align: center; background: #d1fae5; border-radius: 8px;">
+              <p style="color: #065f46; margin: 0; font-weight: 600;">✓ QR Code Scanned</p>
+            </div>
+          `;
+
+          validateCreateForm();
+        } catch (e) {
+          console.error("Invalid QR:", e);
+        }
+      }
+
+      function validateCreateForm() {
+        const qty = document.getElementById('input-qty').value;
+        const outBy = getDropdownValue('input-out-by', 'custom-out-by');
+        document.getElementById('create-job-btn').disabled = !(scannedData && qty > 0 && outBy);
+      }
+
+      document.getElementById('input-qty').addEventListener('input', validateCreateForm);
+      document.getElementById('input-out-by').addEventListener('change', validateCreateForm);
+      document.getElementById('custom-out-by').addEventListener('input', validateCreateForm);
+
+      async function createJob() {
+        if (!scannedData) return;
+
+        const qty = parseFloat(document.getElementById('input-qty').value);
+        const outBy = getDropdownValue('input-out-by', 'custom-out-by');
+
+        if (!qty || !outBy) return alert('Please fill all fields');
+
+        const outEventId = await getNextOutEventId();
+        const millingEventId = await getNextMillingEventId();
+
+        const { error } = await supabase.from('grain_out_data').insert([{
+          out_event_id: outEventId,
+          source_event_id: scannedData.eventId,
+          milling_event_id: millingEventId,
+          grain_name: scannedData.grainName,
+          quantity_kg: qty,
+          out_date: getISTDate(),
+          out_time: getISTTime(),
+          out_by: outBy
+        }]);
+
+        if (error) return alert('Failed: ' + error.message);
+
+        closeCreateModal();
+        fetchJobs();
+      }
+
+      // Start Modal
+      function openStartModal(millingId) {
+        selectedJobId = millingId;
+        const job = jobs.find(j => j.milling_id === millingId);
+        if (!job) return;
+
+        document.getElementById('start-grain-name').textContent = job.grain_name;
+        document.getElementById('start-qty').textContent = parseFloat(job.quantity_kg).toFixed(1);
+        document.getElementById('start-out-id').textContent = job.out_event_id;
+        document.getElementById('input-machine').value = '';
+        document.getElementById('input-milled-by').value = '';
+        document.getElementById('custom-machine').value = '';
+        document.getElementById('custom-milled-by').value = '';
+        document.getElementById('custom-machine-row').classList.remove('active');
+        document.getElementById('custom-milled-by-row').classList.remove('active');
+        document.getElementById('start-modal').classList.add('active');
+      }
+
+      function closeStartModal() {
+        document.getElementById('start-modal').classList.remove('active');
+        selectedJobId = null;
+      }
+
+      async function startMilling() {
+        if (!selectedJobId) return;
+
+        const machine = getDropdownValue('input-machine', 'custom-machine');
+        const milledBy = getDropdownValue('input-milled-by', 'custom-milled-by');
+
+        if (!machine || !milledBy) return alert('Please select machine and miller');
+
+        const { error } = await supabase
+          .from('grain_out_data')
+          .update({
+            machine_no: machine,
+            milled_by: milledBy,
+            milling_start_date: getISTDate(),
+            milling_start_time: getISTTime()
+          })
+          .eq('milling_id', selectedJobId);
+
+        if (error) return alert('Failed: ' + error.message);
+
+        closeStartModal();
+        fetchJobs();
+      }
+
+      async function endMilling(millingId) {
+        if (!confirm('End milling for this job?')) return;
+
+        const { error } = await supabase
+          .from('grain_out_data')
+          .update({
+            milling_end_date: getISTDate(),
+            milling_end_time: getISTTime()
+          })
+          .eq('milling_id', millingId);
+
+        if (error) return alert('Failed: ' + error.message);
+
+        fetchJobs();
+      }
+
+      // Edit Modal
+      function openEditModal(millingId) {
+        editingJobId = millingId;
+        const job = jobs.find(j => j.milling_id === millingId);
+        if (!job) return;
+
+        document.getElementById('edit-grain').value = job.grain_name;
+        document.getElementById('edit-qty').value = job.quantity_kg;
+        
+        // Set out_by - check if value exists in dropdown
+        const outBySelect = document.getElementById('edit-out-by');
+        const outByExists = Array.from(outBySelect.options).some(o => o.value === job.out_by);
+        if (outByExists) {
+          outBySelect.value = job.out_by;
+          document.getElementById('custom-edit-out-by-row').classList.remove('active');
+        } else {
+          outBySelect.value = '__custom__';
+          document.getElementById('custom-edit-out-by').value = job.out_by;
+          document.getElementById('custom-edit-out-by-row').classList.add('active');
+        }
+
+        // Set machine - check if value exists in dropdown
+        const machineSelect = document.getElementById('edit-machine');
+        if (job.machine_no) {
+          const machineExists = Array.from(machineSelect.options).some(o => o.value === job.machine_no);
+          if (machineExists) {
+            machineSelect.value = job.machine_no;
+            document.getElementById('custom-edit-machine-row').classList.remove('active');
+          } else {
+            machineSelect.value = '__custom__';
+            document.getElementById('custom-edit-machine').value = job.machine_no;
+            document.getElementById('custom-edit-machine-row').classList.add('active');
+          }
+        } else {
+          machineSelect.value = '';
+          document.getElementById('custom-edit-machine-row').classList.remove('active');
+        }
+
+        // Set milled_by - check if value exists in dropdown
+        const milledBySelect = document.getElementById('edit-milled-by');
+        if (job.milled_by) {
+          const milledByExists = Array.from(milledBySelect.options).some(o => o.value === job.milled_by);
+          if (milledByExists) {
+            milledBySelect.value = job.milled_by;
+            document.getElementById('custom-edit-milled-by-row').classList.remove('active');
+          } else {
+            milledBySelect.value = '__custom__';
+            document.getElementById('custom-edit-milled-by').value = job.milled_by;
+            document.getElementById('custom-edit-milled-by-row').classList.add('active');
+          }
+        } else {
+          milledBySelect.value = '';
+          document.getElementById('custom-edit-milled-by-row').classList.remove('active');
+        }
+
+        document.getElementById('edit-modal').classList.add('active');
+      }
+
+      function closeEditModal() {
+        document.getElementById('edit-modal').classList.remove('active');
+        editingJobId = null;
+      }
+
+      async function saveEditJob() {
+        if (!editingJobId) return;
+
+        const qty = parseFloat(document.getElementById('edit-qty').value);
+        const outBy = getDropdownValue('edit-out-by', 'custom-edit-out-by');
+        const machine = getDropdownValue('edit-machine', 'custom-edit-machine');
+        const milledBy = getDropdownValue('edit-milled-by', 'custom-edit-milled-by');
+
+        if (!qty || !outBy) return alert('Please fill quantity and out by');
+
+        const updateData = { 
+          quantity_kg: qty, 
+          out_by: outBy 
+        };
+        
+        if (machine) updateData.machine_no = machine;
+        if (milledBy) updateData.milled_by = milledBy;
+
+        const { error } = await supabase
+          .from('grain_out_data')
+          .update(updateData)
+          .eq('milling_id', editingJobId);
+
+        if (error) return alert('Failed: ' + error.message);
+
+        closeEditModal();
+        fetchJobs();
+      }
+
+      // Delete Job
+      async function deleteJob(millingId) {
+        if (!confirm('Delete this job? This cannot be undone.')) return;
+
+        const { error } = await supabase
+          .from('grain_out_data')
+          .delete()
+          .eq('milling_id', millingId);
+
+        if (error) return alert('Failed: ' + error.message);
+
+        fetchJobs();
+      }
+
+      // QR Code Modal
+      function showQRCode(millingId) {
+        const job = jobs.find(j => j.milling_id === millingId);
+        if (!job) return;
+
+        const qrData = JSON.stringify({
+          mid: job.milling_id,
+          out: job.out_event_id,
+          mill: job.milling_event_id,
+          g: job.grain_name,
+          q: job.quantity_kg,
+          m: job.machine_no || '',
+          d: job.out_date
+        });
+
+        document.getElementById('qr-image').src = 
+          `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrData)}`;
+
+        document.getElementById('qr-details').innerHTML = `
+          <p><strong>Milling ID:</strong> MILL-${job.milling_event_id}</p>
+          <p><strong>Out Event:</strong> OUT-${job.out_event_id}</p>
+          <p><strong>Grain:</strong> ${job.grain_name}</p>
+          <p><strong>Quantity:</strong> ${parseFloat(job.quantity_kg).toFixed(1)} Kg</p>
+          ${job.machine_no ? `<p><strong>Machine:</strong> ${job.machine_no}</p>` : ''}
+          <p><strong>Date:</strong> ${formatDate(job.out_date)}</p>
+        `;
+
+        document.getElementById('qr-modal').classList.add('active');
+      }
+
+      function closeQRModal() {
+        document.getElementById('qr-modal').classList.remove('active');
+      }
+
+      function printQR() {
+        window.print();
+      }
+
+      // Init
+      fetchDropdownData();
+      fetchJobs();
+    </script>
+  </body>
+</html>
