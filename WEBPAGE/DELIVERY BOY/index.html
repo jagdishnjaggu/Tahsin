@@ -943,8 +943,8 @@
           <div class="stat-card">
             <div class="stat-info">
               <div class="stat-label">Pending Orders:</div>
-              <div class="stat-number" id="totalOrders">0</div>
-            </div>
+            <div class="stat-number" id="totalOrders">0</div>
+          </div>
           </div>
         </div>
       </div>
@@ -1589,10 +1589,10 @@
             .update({
                     payment_photo_url: downloadURL,
                     payment_photo_timestamp: new Date().toISOString()
-                  })
-                  .eq("order_id", order.order_id);
-              }
-              
+            })
+            .eq("order_id", order.order_id);
+        }
+
               // Mark as delivered with payment received
               await markAsDelivered(currentPhotoShopifyName, true);
               
@@ -1713,19 +1713,19 @@
           return;
         }
 
-        const orders = currentOrders.filter(
-          (order) => order.shopify_name === shopifyName
-        );
+          const orders = currentOrders.filter(
+            (order) => order.shopify_name === shopifyName
+          );
 
         // Update all orders with the same shopify_name
         Promise.all(orders.map(order => 
-          supabase
-            .from("orders_overall_copy")
-            .update({
+            supabase
+              .from("orders_overall_copy")
+              .update({
               delivery_status: "issue",
               delivery_issue: issueMessage,
               actual_delivery_time: new Date().toISOString()
-            })
+              })
             .eq("order_id", order.order_id)
         )).then(() => {
           alert("Issue reported successfully.");
@@ -1904,3 +1904,4 @@
     </script>
   </body>
 </html>
+  
